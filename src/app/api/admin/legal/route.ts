@@ -1,14 +1,20 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog, saveContentVersion } from "@/lib/audit";
 import { slugify } from "@/lib/sanitize";
 import { dispatchEmail } from "@/lib/email";
+import { escapeHtml, sanitizeRichHtml } from "@/lib/security";
+
+const LEGAL_ROLES = ["SUPER_ADMIN", "LEGAL_ADMIN"];
 
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, LEGAL_ROLES)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions." }, { status: 403 });
+  }
 
   const [types, documents, signatureRequests] = await Promise.all([
     prisma.legalDocumentType.findMany({ orderBy: { name: "asc" } }),
@@ -22,6 +28,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, LEGAL_ROLES)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions." }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
@@ -116,14 +125,16 @@ export async function POST(req: NextRequest) {
       if (!doc) return NextResponse.json({ error: "Document not found." }, { status: 404 });
 
       const effectiveDate = new Date().toISOString().slice(0, 10);
-      const renderedHtml = doc.contentHtml
-        .replace(/\{\{effectiveDate\}\}/g, effectiveDate)
-        .replace(/\{\{clientName\}\}/g, body.clientName)
-        .replace(/\{\{clientEmail\}\}/g, body.clientEmail)
-        .replace(/\{\{clientCompany\}\}/g, body.clientCompany || body.clientName)
-        .replace(/\{\{profileCode\}\}/g, body.profileCode || "N/A")
-        .replace(/\{\{roleTitle\}\}/g, body.roleTitle || "Agreed Services")
-        .replace(/\{\{monthlyRateUsd\}\}/g, body.monthlyRateUsd || "Agreed");
+      const renderedHtml = sanitizeRichHtml(
+        doc.contentHtml
+          .replace(/\{\{effectiveDate\}\}/g, escapeHtml(effectiveDate))
+          .replace(/\{\{clientName\}\}/g, escapeHtml(body.clientName))
+          .replace(/\{\{clientEmail\}\}/g, escapeHtml(body.clientEmail))
+          .replace(/\{\{clientCompany\}\}/g, escapeHtml(body.clientCompany || body.clientName))
+          .replace(/\{\{profileCode\}\}/g, escapeHtml(body.profileCode || "N/A"))
+          .replace(/\{\{roleTitle\}\}/g, escapeHtml(body.roleTitle || "Agreed Services"))
+          .replace(/\{\{monthlyRateUsd\}\}/g, escapeHtml(body.monthlyRateUsd || "Agreed"))
+      );
 
       const token = `sign-${crypto.randomBytes(10).toString("hex")}`;
       const sigReq = await prisma.signatureRequest.create({

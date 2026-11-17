@@ -2,14 +2,17 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
-import { slugify } from "@/lib/sanitize";
+import { resolveUploadStorageDir, validateAndScanUploadBuffer } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "CONTENT_EDITOR"])) {
+    return NextResponse.json({ error: "Insufficient role permissions for uploads." }, { status: 403 });
   }
 
   try {
@@ -22,23 +25,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File is required." }, { status: 400 });
     }
 
-    const dir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(dir, { recursive: true });
-    const ext = path.extname(file.name).replace(/[^a-zA-Z0-9.]/g, "") || ".png";
-    const base = slugify(path.basename(file.name, ext)) || "asset";
-    const filename = `${Date.now()}-${base}${ext}`;
-    const absPath = path.join(dir, filename);
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(absPath, buffer);
+    const scan = await validateAndScanUploadBuffer(file.name, file.type, buffer, "media");
+    if (!scan.ok) {
+      return NextResponse.json({ error: scan.error }, { status: 400 });
+    }
+
+    // Stored outside executable/public webroot (storage/uploads or UPLOAD_STORAGE_DIR)
+    const dir = resolveUploadStorageDir("uploads");
+    await fs.mkdir(dir, { recursive: true });
+    const filename = scan.safeFilename;
+    const absPath = path.join(dir, filename);
+    await fs.writeFile(absPath, buffer, { mode: 0o644 });
 
     const asset = await prisma.mediaAsset.create({
       data: {
         filename,
         originalName: file.name,
-        mimeType: file.type || "application/octet-stream",
-        sizeBytes: file.size,
-        url: `/uploads/${filename}`,
+        mimeType: scan.mimeType,
+        sizeBytes: buffer.length,
+        url: `/api/media/${filename}`,
         altText: altText || file.name,
         folder,
         uploadedBy: session.email,

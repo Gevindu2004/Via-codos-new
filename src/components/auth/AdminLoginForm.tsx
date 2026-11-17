@@ -10,6 +10,8 @@ export function AdminLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,10 +23,19 @@ export function AdminLoginForm() {
       const res = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          ...(mfaRequired ? { totpCode } : {}),
+        }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (data.mfaRequired && !res.ok) {
+        setMfaRequired(true);
+        setError(data.error || "Invalid authenticator code.");
+      } else if (data.mfaRequired) {
+        setMfaRequired(true);
+      } else if (!res.ok) {
         setError(data.error || "Invalid credentials");
       } else {
         router.push("/admin");
@@ -83,6 +94,23 @@ export function AdminLoginForm() {
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-[#0A192F] focus:outline-none"
             />
           </div>
+
+          {mfaRequired && (
+            <div>
+              <label className="block text-xs font-semibold text-[#0A0F1A] mb-1">
+                6-Digit Authenticator Code (MFA)
+              </label>
+              <input
+                required
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                className="w-full rounded-xl border border-[#1D4ED8] bg-sky-50/40 px-3.5 py-2.5 text-sm font-mono tracking-widest focus:border-[#0A192F] focus:outline-none"
+              />
+            </div>
+          )}
 
           <button
             type="submit"

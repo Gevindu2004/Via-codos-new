@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
 
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "RECRUITER"])) {
+    return NextResponse.json({ error: "Insufficient role permissions for talent profiles." }, { status: 403 });
+  }
 
   const [profiles, domains] = await Promise.all([
     prisma.talentProfile.findMany({ orderBy: [{ visibilityFlag: "desc" }, { profileCode: "asc" }] }),
@@ -28,6 +31,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "RECRUITER"])) {
+    return NextResponse.json({ error: "Insufficient role permissions for talent updates." }, { status: 403 });
+  }
 
   try {
     const body = await req.json();

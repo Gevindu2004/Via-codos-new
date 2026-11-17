@@ -463,7 +463,7 @@ export default async function HomePage() {
       <section className="py-20 bg-[#0A0F1A] text-white overflow-hidden">
         <Reveal direction="scale">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1 text-xs font-semibold text-sky-300 mb-5">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-sky-300 mb-5">
               <ShieldCheck className="h-4 w-4" />
               NDA-First · Fixed Transparency · 100% Satisfaction Commitment
             </div>

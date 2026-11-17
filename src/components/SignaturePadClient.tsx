@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import {
   PenTool,
   Type,
@@ -270,7 +271,7 @@ export function SignaturePadClient({ initialRequest }: { initialRequest: SigReqV
           <div className="p-6 sm:p-8 max-h-[540px] overflow-y-auto border-b border-slate-200">
             <div
               className="vc-prose text-sm"
-              dangerouslySetInnerHTML={{ __html: reqData.renderedHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(reqData.renderedHtml) }}
             />
           </div>
 

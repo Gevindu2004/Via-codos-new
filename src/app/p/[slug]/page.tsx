@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { safeJsonParse } from "@/lib/sanitize";
+import { safeJsonParse, sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { PageBanner } from "@/components/PageBanner";
 
@@ -131,7 +131,7 @@ export default async function DynamicCmsPage({
                 {sec.bodyHtml && (
                   <div
                     className="vc-prose"
-                    dangerouslySetInnerHTML={{ __html: sec.bodyHtml }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(sec.bodyHtml) }}
                   />
                 )}
               </div>

@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signClientToken, CLIENT_COOKIE } from "@/lib/auth";
 import { dispatchEmail } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req.headers);
+    const limit = checkRateLimit(`portal-register:${ip}`, 10, 15 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
+      );
+    }
+
     const body = await req.json();
     const { name, email, password, companyName, companyWebsite, companyCountry, jobTitle, phone } =
       body;
@@ -12,6 +22,12 @@ export async function POST(req: NextRequest) {
     if (!name || !email || !password || !companyName) {
       return NextResponse.json(
         { error: "Name, work email, password, and company name are required." },
+        { status: 400 }
+      );
+    }
+    if (String(password).length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long." },
         { status: 400 }
       );
     }
@@ -64,13 +80,12 @@ export async function POST(req: NextRequest) {
     res.cookies.set(CLIENT_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24 * 14,
     });
     return res;
-  } catch (err) {
-    console.error("Client register error:", err);
+  } catch {
     return NextResponse.json({ error: "Registration failed." }, { status: 500 });
   }
 }
-

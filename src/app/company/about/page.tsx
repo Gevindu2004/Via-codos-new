@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { safeJsonParse } from "@/lib/sanitize";
+import { safeJsonParse, sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { PageBanner } from "@/components/PageBanner";
 
@@ -38,9 +38,10 @@ export default async function AboutPage() {
             <div
               className="vc-prose"
               dangerouslySetInnerHTML={{
-                __html:
+                __html: sanitizeRichHtml(
                   richSection?.bodyHtml ||
-                  "<p>Via Codos bridges global businesses with top Sri Lankan engineering and management talent.</p>",
+                    "<p>Via Codos bridges global businesses with top Sri Lankan engineering and management talent.</p>"
+                ),
               }}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-8">

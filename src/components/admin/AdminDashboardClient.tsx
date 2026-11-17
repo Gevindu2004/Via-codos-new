@@ -83,6 +83,9 @@ export function AdminDashboardClient({
     sampleProfiles: [],
   });
   const [auditData, setAuditData] = useState<any>({ auditLogs: [], emails: [] });
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaSetup, setMfaSetup] = useState<{ secret: string; otpAuthUri: string } | null>(null);
+  const [mfaCodeInput, setMfaCodeInput] = useState("");
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -92,13 +95,14 @@ export function AdminDashboardClient({
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [c, l, t, p, ca, au] = await Promise.all([
+      const [c, l, t, p, ca, au, mf] = await Promise.all([
         fetch("/api/admin/content").then((r) => r.json()),
         fetch("/api/admin/legal").then((r) => r.json()),
         fetch("/api/admin/talent").then((r) => r.json()),
         fetch("/api/admin/pipeline").then((r) => r.json()),
         fetch("/api/admin/careers").then((r) => r.json()),
         fetch("/api/admin/audit").then((r) => r.json()),
+        fetch("/api/admin/auth/mfa").then((r) => r.json()),
       ]);
       setContentData(c);
       setLegalData(l);
@@ -106,6 +110,7 @@ export function AdminDashboardClient({
       setPipelineData(p);
       setCareersData(ca);
       setAuditData(au);
+      setMfaEnabled(Boolean(mf?.mfaEnabled));
     } finally {
       setLoading(false);
     }
@@ -243,6 +248,131 @@ export function AdminDashboardClient({
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Admin Account MFA (TOTP 2FA) */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="font-heading text-lg font-bold text-[#0A0F1A]">
+                          Admin Multi-Factor Authentication (TOTP MFA)
+                        </h2>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Protect your administrator account with a 6-digit authenticator app (Google / Microsoft Authenticator). Secret keys are encrypted at rest with AES-256-GCM.
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${
+                          mfaEnabled
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {mfaEnabled ? "MFA Enabled" : "MFA Not Enabled"}
+                      </span>
+                    </div>
+
+                    {!mfaEnabled && !mfaSetup && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await fetch("/api/admin/auth/mfa", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "SETUP" }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setMfaSetup(data);
+                          } else {
+                            notify(data.error || "Failed to initialize MFA");
+                          }
+                        }}
+                        className="rounded-full bg-[#0A192F] px-5 py-2 text-xs font-semibold text-white hover:bg-[#1E3A8A]"
+                      >
+                        Set Up Authenticator MFA
+                      </button>
+                    )}
+
+                    {!mfaEnabled && mfaSetup && (
+                      <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 space-y-3 text-xs">
+                        <div>
+                          Add this setup key to your Authenticator app:{" "}
+                          <code className="font-mono font-bold text-[#0A192F] bg-white px-2 py-0.5 rounded border border-slate-200">
+                            {mfaSetup.secret}
+                          </code>
+                        </div>
+                        <div className="text-[11px] text-slate-500 break-all">
+                          URI: <code>{mfaSetup.otpAuthUri}</code>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="Enter 6-digit code"
+                            value={mfaCodeInput}
+                            onChange={(e) => setMfaCodeInput(e.target.value.replace(/\D/g, ""))}
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono tracking-widest w-40"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const res = await fetch("/api/admin/auth/mfa", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ action: "ENABLE", totpCode: mfaCodeInput }),
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                setMfaEnabled(true);
+                                setMfaSetup(null);
+                                setMfaCodeInput("");
+                                notify("TOTP MFA enabled for your admin account.");
+                              } else {
+                                notify(data.error || "Invalid code");
+                              }
+                            }}
+                            className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                          >
+                            Verify &amp; Enable MFA
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {mfaEnabled && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="6-digit code"
+                          value={mfaCodeInput}
+                          onChange={(e) => setMfaCodeInput(e.target.value.replace(/\D/g, ""))}
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-mono tracking-widest w-36"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const res = await fetch("/api/admin/auth/mfa", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "DISABLE", totpCode: mfaCodeInput }),
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              setMfaEnabled(false);
+                              setMfaCodeInput("");
+                              notify("MFA disabled.");
+                            } else {
+                              notify(data.error || "Invalid code");
+                            }
+                          }}
+                          className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                        >
+                          Disable MFA
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-6">

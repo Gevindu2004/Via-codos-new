@@ -65,7 +65,7 @@ export function SiteFooter({
             <div className="pt-2">
               <Link
                 href={brand.codosConsoleUrl || "/codos-console"}
-                className="inline-flex items-center gap-2 rounded-lg border border-sky-400/30 bg-[#0A192F] px-4 py-2 text-xs font-semibold text-sky-300 hover:bg-[#1E3A8A] hover:text-white transition"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-sky-300 hover:text-white transition"
               >
                 <Terminal className="h-3.5 w-3.5" />
                 Switch to Codos Console SaaS →

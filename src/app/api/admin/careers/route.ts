@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
 import { slugify } from "@/lib/sanitize";
+
+const CAREERS_ROLES = ["SUPER_ADMIN", "RECRUITER"];
 
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, CAREERS_ROLES)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions." }, { status: 403 });
+  }
 
   const [domains, postings, applications, sampleProfiles] = await Promise.all([
     prisma.jobDomain.findMany({ orderBy: { name: "asc" } }),
@@ -24,6 +29,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, CAREERS_ROLES)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions." }, { status: 403 });
+  }
 
   try {
     const body = await req.json();

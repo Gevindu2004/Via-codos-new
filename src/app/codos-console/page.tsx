@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 
 export const dynamic = "force-dynamic";
@@ -198,7 +199,7 @@ export default async function CodosConsolePage({
 
                     <div
                       className="vc-prose text-sm"
-                      dangerouslySetInnerHTML={{ __html: activeProduct.descriptionHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(activeProduct.descriptionHtml) }}
                     />
 
                     <div className="rounded-xl border border-slate-200 bg-[#0A0F1A] p-5 text-slate-200 font-mono text-xs space-y-1.5">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { PageBanner } from "@/components/PageBanner";
 
@@ -45,7 +46,7 @@ export default async function InsightDetailPage({
           </Link>
           <article
             className="vc-prose"
-            dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(article.bodyHtml) }}
           />
         </div>
       </section>

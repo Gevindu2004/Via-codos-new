@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveUploadStorageDir, validateAndScanUploadBuffer } from "@/lib/security";
 
 export async function GET(
   _req: NextRequest,
@@ -52,12 +53,21 @@ export async function POST(
 
     let recordingUrl: string | null = session.recordingUrl;
     if (recordingFile && recordingFile.size > 0) {
-      const dir = path.join(process.cwd(), "storage", "interviews");
-      await fs.mkdir(dir, { recursive: true });
-      const fileName = `interview-${token}-${Date.now()}.webm`;
-      const absPath = path.join(dir, fileName);
       const buffer = Buffer.from(await recordingFile.arrayBuffer());
-      await fs.writeFile(absPath, buffer);
+      const scan = await validateAndScanUploadBuffer(
+        recordingFile.name || "recording.webm",
+        recordingFile.type || "video/webm",
+        buffer,
+        "recording"
+      );
+      if (!scan.ok) {
+        return NextResponse.json({ error: scan.error }, { status: 400 });
+      }
+      const dir = resolveUploadStorageDir("interviews");
+      await fs.mkdir(dir, { recursive: true });
+      const fileName = scan.safeFilename;
+      const absPath = path.join(dir, fileName);
+      await fs.writeFile(absPath, buffer, { mode: 0o644 });
       recordingUrl = `/api/interview/recording/${fileName}`;
     }
 

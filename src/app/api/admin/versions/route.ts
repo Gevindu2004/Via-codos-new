@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog, saveContentVersion } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "CONTENT_EDITOR", "LEGAL_ADMIN"])) {
+    return NextResponse.json({ error: "Insufficient role permissions." }, { status: 403 });
+  }
 
   const { searchParams } = new URL(req.url);
   const entityType = searchParams.get("entityType");
@@ -26,6 +29,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "CONTENT_EDITOR", "LEGAL_ADMIN"])) {
+    return NextResponse.json({ error: "Insufficient role permissions for rollback." }, { status: 403 });
+  }
 
   try {
     const { versionId } = await req.json();

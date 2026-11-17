@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, Terminal, ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { safeJsonParse } from "@/lib/sanitize";
+import { safeJsonParse, sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { PageBanner } from "@/components/PageBanner";
 import { DynamicIcon } from "@/components/IconResolver";
@@ -73,7 +73,7 @@ export default async function SaasDetailPage({
             <div className="lg:col-span-7">
               <div
                 className="vc-prose"
-                dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.descriptionHtml) }}
               />
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link

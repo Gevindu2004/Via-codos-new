@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getClientSession } from "@/lib/auth";
+import { escapeHtml, sanitizeRichHtml } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   const session = await getClientSession();
@@ -28,14 +29,16 @@ export async function POST(req: NextRequest) {
   }
 
   const effectiveDate = new Date().toISOString().slice(0, 10);
-  const renderedHtml = template.contentHtml
-    .replace(/\{\{effectiveDate\}\}/g, effectiveDate)
-    .replace(/\{\{clientName\}\}/g, pipe.client.name)
-    .replace(/\{\{clientEmail\}\}/g, pipe.client.email)
-    .replace(/\{\{clientCompany\}\}/g, pipe.client.companyName)
-    .replace(/\{\{profileCode\}\}/g, pipe.talent.profileCode)
-    .replace(/\{\{roleTitle\}\}/g, pipe.talent.roleTitle)
-    .replace(/\{\{monthlyRateUsd\}\}/g, String(pipe.talent.monthlyRateUsd));
+  const renderedHtml = sanitizeRichHtml(
+    template.contentHtml
+      .replace(/\{\{effectiveDate\}\}/g, escapeHtml(effectiveDate))
+      .replace(/\{\{clientName\}\}/g, escapeHtml(pipe.client.name))
+      .replace(/\{\{clientEmail\}\}/g, escapeHtml(pipe.client.email))
+      .replace(/\{\{clientCompany\}\}/g, escapeHtml(pipe.client.companyName))
+      .replace(/\{\{profileCode\}\}/g, escapeHtml(pipe.talent.profileCode))
+      .replace(/\{\{roleTitle\}\}/g, escapeHtml(pipe.talent.roleTitle))
+      .replace(/\{\{monthlyRateUsd\}\}/g, escapeHtml(String(pipe.talent.monthlyRateUsd)))
+  );
 
   const token = `sign-${crypto.randomBytes(10).toString("hex")}`;
   const sigReq = await prisma.signatureRequest.create({

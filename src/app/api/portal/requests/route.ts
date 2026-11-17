@@ -77,6 +77,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "talentId is required." }, { status: 400 });
   }
 
+  const client = await prisma.clientUser.findUnique({ where: { id: session.clientId } });
+  if (!client || client.verificationStatus !== "VERIFIED") {
+    return NextResponse.json(
+      { error: "Your company account must be verified by an administrator before requesting profiles." },
+      { status: 403 }
+    );
+  }
+
   const talent = await prisma.talentProfile.findUnique({ where: { id: String(talentId) } });
   if (!talent || talent.placementStatus === "PLACED") {
     return NextResponse.json(

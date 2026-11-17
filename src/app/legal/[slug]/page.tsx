@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, FileCheck2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { sanitizeRichHtml } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { PageBanner } from "@/components/PageBanner";
 
@@ -59,7 +60,7 @@ export default async function LegalDocDetailPage({
 
           <article
             className="vc-prose"
-            dangerouslySetInnerHTML={{ __html: doc.contentHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(doc.contentHtml) }}
           />
         </div>
       </section>

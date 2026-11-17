@@ -1,0 +1,564 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// 1. ADMIN AUTH, AUDIT LOGS & CONTENT VERSIONING (AZURE SQL)
+// ============================================================================
+
+model AdminUser {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         String     @default("SUPER_ADMIN") // SUPER_ADMIN | EDITOR | LEGAL_ADMIN | RECRUITER
+  isActive     Boolean    @default(true)
+  mfaEnabled   Boolean    @default(false)
+  mfaSecret    String?    @db.NVarChar(Max)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  actorId     String?
+  actor       AdminUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail  String
+  actorRole   String
+  action      String
+  entityType  String
+  entityId    String
+  entityLabel String
+  summary     String     @db.NVarChar(Max)
+  beforeJson  String?    @db.NVarChar(Max)
+  afterJson   String?    @db.NVarChar(Max)
+  ipAddress   String?
+  createdAt   DateTime   @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ContentVersion {
+  id             String   @id @default(cuid())
+  entityType     String
+  entityId       String
+  versionNumber  Int
+  snapshotJson   String   @db.NVarChar(Max)
+  changeNote     String?  @db.NVarChar(Max)
+  createdByEmail String
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId, versionNumber])
+}
+
+// ============================================================================
+// 2. CMS PAGES, SECTIONS, MENUS, CATEGORIES, MEDIA & SETTINGS
+// ============================================================================
+
+model SiteSetting {
+  key       String   @id
+  valueJson String   @db.NVarChar(Max)
+  updatedAt DateTime @updatedAt
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  location     String
+  label        String
+  href         String
+  groupName    String?
+  icon         String?
+  parentId     String?
+  sortOrder    Int      @default(0)
+  isVisible    Boolean  @default(true)
+  openInNewTab Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([location, sortOrder])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  scope       String    @default("PAGE")
+  description String?   @db.NVarChar(Max)
+  sortOrder   Int       @default(0)
+  pages       CmsPage[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model CmsPage {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  title           String
+  subtitle        String?      @db.NVarChar(Max)
+  metaTitle       String?
+  metaDescription String?      @db.NVarChar(Max)
+  categoryId      String?
+  category        Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  template        String       @default("STANDARD")
+  status          String       @default("PUBLISHED")
+  isSystem        Boolean      @default(false)
+  publishedAt     DateTime?
+  updatedBy       String?
+  sections        CmsSection[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model CmsSection {
+  id         String   @id @default(cuid())
+  pageId     String
+  page       CmsPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sectionKey String
+  type       String   @default("RICH_TEXT")
+  title      String?
+  subtitle   String?  @db.NVarChar(Max)
+  bodyHtml   String?  @db.NVarChar(Max)
+  dataJson   String?  @db.NVarChar(Max)
+  imageUrl   String?
+  sortOrder  Int      @default(0)
+  isVisible  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([pageId, sortOrder])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  url          String
+  altText      String?
+  folder       String   @default("general")
+  uploadedBy   String?
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================================
+// 3. CORPORATE SERVICES, INDUSTRIES, PORTFOLIO, INSIGHTS, TEAM, FEEDBACK
+// ============================================================================
+
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  groupName       String
+  icon            String   @default("code")
+  tagline         String
+  metaTitle       String
+  metaDescription String   @db.NVarChar(Max)
+  oneliner        String   @db.NVarChar(Max)
+  bodyJson        String   @db.NVarChar(Max)
+  includedJson    String   @db.NVarChar(Max)
+  disciplinesJson String?  @db.NVarChar(Max)
+  levelsJson      String?  @db.NVarChar(Max)
+  statValue       String
+  statLabel       String
+  videoUrl        String?
+  posterUrl       String?
+  sortOrder       Int      @default(0)
+  status          String   @default("PUBLISHED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Industry {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  icon           String   @default("building")
+  metaTitle      String
+  intro          String   @db.NVarChar(Max)
+  challengesJson String   @db.NVarChar(Max)
+  solutionsJson  String   @db.NVarChar(Max)
+  sortOrder      Int      @default(0)
+  status         String   @default("PUBLISHED")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CaseStudy {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  name               String
+  sector             String
+  imageUrl           String
+  videoUrl           String?
+  posterUrl          String?
+  metaTitle          String
+  metaDescription    String   @db.NVarChar(Max)
+  headline           String
+  clientDesc         String   @db.NVarChar(Max)
+  challenge          String   @db.NVarChar(Max)
+  solution           String   @db.NVarChar(Max)
+  implementationJson String   @db.NVarChar(Max)
+  resultsJson        String   @db.NVarChar(Max)
+  quote              String   @db.NVarChar(Max)
+  sortOrder          Int      @default(0)
+  status             String   @default("PUBLISHED")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model InsightArticle {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  category   String
+  dateLabel  String
+  readTime   String
+  excerpt    String   @db.NVarChar(Max)
+  bodyHtml   String   @db.NVarChar(Max)
+  coverImage String?
+  status     String   @default("PUBLISHED")
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  imageUrl  String?
+  bio       String   @db.NVarChar(Max)
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  company   String?
+  country   String?
+  imageUrl  String?
+  quote     String   @db.NVarChar(Max)
+  rating    Int      @default(5)
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// 4. SAAS PRODUCTS & CODOS CONSOLE
+// ============================================================================
+
+model SaasProduct {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  name               String
+  tagline            String
+  badge              String?
+  summary            String   @db.NVarChar(Max)
+  descriptionHtml    String   @db.NVarChar(Max)
+  featuresJson       String   @db.NVarChar(Max)
+  metricsJson        String   @db.NVarChar(Max)
+  pricingTiersJson   String   @db.NVarChar(Max)
+  heroImage          String?
+  consolePath        String
+  externalConsoleUrl String?
+  sortOrder          Int      @default(0)
+  status             String   @default("PUBLISHED")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ============================================================================
+// 5. LEGAL DOCUMENTS, TEMPLATES & E-SIGN + EMAIL OUTBOX
+// ============================================================================
+
+model LegalDocumentType {
+  id                String          @id @default(cuid())
+  slug              String          @unique
+  name              String
+  description       String?         @db.NVarChar(Max)
+  isPublicPolicy    Boolean         @default(true)
+  isPrivateTemplate Boolean         @default(false)
+  documents         LegalDocument[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model LegalDocument {
+  id                String             @id @default(cuid())
+  typeId            String
+  type              LegalDocumentType  @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  slug              String             @unique
+  title             String
+  version           String             @default("1.0")
+  effectiveDate     DateTime           @default(now())
+  summary           String?            @db.NVarChar(Max)
+  contentHtml       String             @db.NVarChar(Max)
+  status            String             @default("PUBLISHED")
+  isTemplate        Boolean            @default(false)
+  isPublic          Boolean            @default(true)
+  updatedBy         String?
+  signatureRequests SignatureRequest[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model SignatureRequest {
+  id                    String        @id @default(cuid())
+  token                 String        @unique
+  documentId            String
+  document              LegalDocument @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  documentTitle         String
+  documentVersion       String
+  renderedHtml          String        @db.NVarChar(Max)
+  clientName            String
+  clientEmail           String
+  clientCompany         String?
+  partyBName            String        @default("Via Codos (PVT) LTD")
+  partyBEmail           String        @default("info@viacodos.com")
+  pipelineRequestId     String?
+  status                String        @default("PENDING")
+  signatureMode         String?
+  signatureDataUrl      String?       @db.NVarChar(Max)
+  signaturePositionJson String?       @db.NVarChar(Max)
+  signerFullName        String?
+  signerTitle           String?
+  signedDateText        String?
+  agreedToElectronic    Boolean       @default(false)
+  signerIp              String?
+  verificationHash      String?
+  signedPdfPath         String?
+  signedAt              DateTime?
+  createdBy             String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([pipelineRequestId])
+}
+
+model EmailOutbox {
+  id             String   @id @default(cuid())
+  toEmail        String
+  ccEmail        String?
+  subject        String
+  bodyText       String   @db.NVarChar(Max)
+  attachmentPath String?
+  status         String   @default("LOGGED_LOCAL")
+  errorMessage   String?  @db.NVarChar(Max)
+  relatedEntity  String?
+  createdAt      DateTime @default(now())
+}
+
+// ============================================================================
+// 6. ANONYMIZED TALENT BENCH & STAFFING INQUIRIES
+// ============================================================================
+
+model TalentDomain {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  category    String
+  description String?  @db.NVarChar(Max)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TalentProfile {
+  id                  String           @id @default(cuid())
+  profileCode         String           @unique
+  displayName         String?
+  category            String
+  domainSlug          String
+  domainName          String
+  roleTitle           String
+  summary             String           @db.NVarChar(Max)
+  skillsJson          String           @db.NVarChar(Max)
+  yearsExperience     Int
+  projectsJson        String           @db.NVarChar(Max)
+  industriesJson      String           @db.NVarChar(Max)
+  availability        String           @default("IMMEDIATE")
+  hourlyRateUsd       Int
+  monthlyRateUsd      Int
+  visibilityFlag      String           @default("SAMPLE")
+  placementStatus     String           @default("AVAILABLE")
+  internalCandidateId String?
+  status              String           @default("PUBLISHED")
+  profileRequests     ProfileRequest[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([category, domainSlug, status])
+}
+
+model StaffingInquiry {
+  id              String   @id @default(cuid())
+  referenceCode   String   @unique
+  name            String
+  email           String
+  company         String?
+  phone           String?
+  serviceLine     String
+  roleNeeded      String?
+  domain          String?
+  skillsText      String?  @db.NVarChar(Max)
+  headcount       Int      @default(1)
+  engagementModel String?
+  timeline        String?
+  timezoneOverlap String?
+  message         String   @db.NVarChar(Max)
+  ndaRequired     Boolean  @default(true)
+  status          String   @default("NEW")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================================
+// 7. CLIENT PORTAL, VERIFICATION, PROFILE REQUESTS, AI INTERVIEWS, MEETINGS
+// ============================================================================
+
+model ClientUser {
+  id                 String           @id @default(cuid())
+  name               String
+  email              String           @unique
+  passwordHash       String
+  companyName        String
+  companyWebsite     String?
+  companyCountry     String?
+  jobTitle           String?
+  phone              String?
+  verificationStatus String           @default("PENDING")
+  verificationNotes  String?          @db.NVarChar(Max)
+  verifiedAt         DateTime?
+  profileRequests    ProfileRequest[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model ProfileRequest {
+  id                  String              @id @default(cuid())
+  clientId            String
+  client              ClientUser          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  talentId            String
+  talent              TalentProfile       @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  stage               String              @default("REQUESTED")
+  requestNotes        String?             @db.NVarChar(Max)
+  adminApprovalNotes  String?             @db.NVarChar(Max)
+  approvedAt          DateTime?
+  approvedBy          String?
+  releasedDossierJson String?             @db.NVarChar(Max)
+  interviews          AiInterviewSession[]
+  meetings            ManagementMeeting[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([clientId, stage])
+}
+
+model AiInterviewSession {
+  id                    String         @id @default(cuid())
+  pipelineRequestId     String
+  pipelineRequest       ProfileRequest @relation(fields: [pipelineRequestId], references: [id], onDelete: Cascade)
+  token                 String         @unique
+  scheduledSlot         DateTime
+  timezone              String         @default("UTC")
+  candidateInviteSentAt DateTime?
+  questionsJson         String         @db.NVarChar(Max)
+  status                String         @default("SCHEDULED")
+  recordingUrl          String?
+  transcriptJson        String?        @db.NVarChar(Max)
+  aiSummary             String?        @db.NVarChar(Max)
+  overallScore          Int?
+  completedAt           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+model ManagementMeeting {
+  id                String         @id @default(cuid())
+  pipelineRequestId String
+  pipelineRequest   ProfileRequest @relation(fields: [pipelineRequestId], references: [id], onDelete: Cascade)
+  scheduledSlot     DateTime
+  timezone          String         @default("UTC")
+  meetingLink       String?
+  attendeesJson     String         @db.NVarChar(Max)
+  notes             String?        @db.NVarChar(Max)
+  status            String         @default("SCHEDULED")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+// ============================================================================
+// 8. CAREERS BOARD & REAL-CANDIDATE SCREENING PIPELINE
+// ============================================================================
+
+model JobDomain {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  name          String
+  category      String       @default("IT")
+  isAutoCreated Boolean      @default(false)
+  postings      JobPosting[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model JobPosting {
+  id                   String           @id @default(cuid())
+  title                String
+  domainId             String?
+  domain               JobDomain?       @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  domainSlug           String
+  domainName           String
+  employmentType       String           @default("Full-time")
+  location             String           @default("Remote")
+  experienceRequired   String
+  skillsJson           String           @db.NVarChar(Max)
+  responsibilitiesJson String           @db.NVarChar(Max)
+  description          String?          @db.NVarChar(Max)
+  status               String           @default("PUBLISHED")
+  applications         JobApplication[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model JobApplication {
+  id                      String      @id @default(cuid())
+  jobPostingId            String?
+  jobPosting              JobPosting? @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
+  applicantName           String
+  applicantEmail          String
+  applicantPhone          String?
+  portfolioUrl            String?
+  domainName              String
+  domainSlug              String
+  skillsJson              String      @db.NVarChar(Max)
+  yearsExperience         Int
+  expectedMonthlyRateUsd  Int?
+  summary                 String?     @db.NVarChar(Max)
+  cvFileUrl               String?
+  cvOriginalName          String?
+  consentToProfile        Boolean     @default(false)
+  screeningStatus         String      @default("NEW")
+  screeningNotes          String?     @db.NVarChar(Max)
+  convertedProfileId      String?
+  replacedSampleProfileId String?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  @@index([screeningStatus])
+}
+

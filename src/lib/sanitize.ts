@@ -68,3 +68,15 @@ export function anonymizeTalentProfile(p: TalentProfile): PublicTalentProfile {
   };
 }
 
+/**
+ * Browser- and server-safe rich HTML sanitizer for stored/rendered CMS & contract HTML.
+ * Strips active tags, inline event handlers, and dangerous URI schemes.
+ */
+export function sanitizeRichHtml(html: string | null | undefined): string {
+  return String(html ?? "")
+    .replace(/<\s*(script|iframe|object|embed|form|meta|link|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|iframe|object|embed|form|meta|link|base)[^>]*\/?\s*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(href|src)\s*=\s*(["'])\s*(?:javascript:|vbscript:|data:text\/html)/gi, "$1=$2#blocked-");
+}
+

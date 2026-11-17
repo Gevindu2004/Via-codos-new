@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
+import { resolveUploadStorageDir } from "@/lib/security";
 
 export async function GET(
   _req: NextRequest,
@@ -13,7 +14,7 @@ export async function GET(
   }
   const { filename } = await params;
   const safeName = path.basename(filename);
-  const absPath = path.join(process.cwd(), "storage", "cvs", safeName);
+  const absPath = path.join(resolveUploadStorageDir("cvs"), safeName);
   try {
     const buf = await fs.readFile(absPath);
     return new NextResponse(buf, {
@@ -21,6 +22,9 @@ export async function GET(
       headers: {
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeName}"`,
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "Cache-Control": "no-store, private",
       },
     });
   } catch {

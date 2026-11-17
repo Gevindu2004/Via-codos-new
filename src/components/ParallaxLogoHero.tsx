@@ -62,7 +62,7 @@ export function ParallaxLogoHero({
   ],
 }: HeroProps) {
   const stageRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ rx: 6, ry: -8, tx: 0, ty: 0 });
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, tx: 0, ty: 0 });
   const [scrollOffset, setScrollOffset] = useState(0);
   const [activePillar, setActivePillar] = useState(0);
   const [isPillarPaused, setIsPillarPaused] = useState(false);
@@ -106,7 +106,7 @@ export function ParallaxLogoHero({
   };
 
   const handleMouseLeave = () => {
-    setTilt({ rx: 6, ry: -8, tx: 0, ty: 0 });
+    setTilt({ rx: 0, ry: 0, tx: 0, ty: 0 });
   };
 
   const c1 = callouts[0] || { label: "Top 1% Vetted Bench", detail: "IT & Management" };

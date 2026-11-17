@@ -3,9 +3,24 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/sanitize";
+import {
+  checkRateLimit,
+  getClientIp,
+  resolveUploadStorageDir,
+  validateAndScanUploadBuffer,
+} from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req.headers);
+    const limit = checkRateLimit(`careers-apply:${ip}`, 10, 15 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many submissions. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
+      );
+    }
+
     const formData = await req.formData();
     const applicantName = String(formData.get("applicantName") || "").trim();
     const applicantEmail = String(formData.get("applicantEmail") || "").trim();
@@ -67,17 +82,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Save uploaded CV file safely
+    // Save uploaded CV file safely outside executable webroot with magic-byte + malware scan
     let cvFileUrl: string | null = null;
     let cvOriginalName: string | null = null;
     if (cvFile && cvFile.size > 0) {
-      const dir = path.join(process.cwd(), "storage", "cvs");
-      await fs.mkdir(dir, { recursive: true });
-      const safeExt = path.extname(cvFile.name).replace(/[^a-zA-Z0-9.]/g, "") || ".pdf";
-      const fileName = `cv-${Date.now()}-${slugify(applicantName)}${safeExt}`;
-      const absPath = path.join(dir, fileName);
       const buffer = Buffer.from(await cvFile.arrayBuffer());
-      await fs.writeFile(absPath, buffer);
+      const scan = await validateAndScanUploadBuffer(cvFile.name, cvFile.type, buffer, "cv");
+      if (!scan.ok) {
+        return NextResponse.json({ error: scan.error }, { status: 400 });
+      }
+      const dir = resolveUploadStorageDir("cvs");
+      await fs.mkdir(dir, { recursive: true });
+      const fileName = scan.safeFilename;
+      const absPath = path.join(dir, fileName);
+      await fs.writeFile(absPath, buffer, { mode: 0o644 });
       cvFileUrl = `/api/careers/cv/${fileName}`;
       cvOriginalName = cvFile.name;
     }

@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hasAdminRole } from "@/lib/auth";
 import { recordAuditLog, saveContentVersion } from "@/lib/audit";
 import { slugify } from "@/lib/sanitize";
 
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "CONTENT_EDITOR"])) {
+    return NextResponse.json({ error: "Insufficient role permissions." }, { status: 403 });
+  }
 
   const [
     pages,
@@ -52,6 +55,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasAdminRole(session, ["SUPER_ADMIN", "CONTENT_EDITOR"])) {
+    return NextResponse.json({ error: "Insufficient role permissions for CMS edits." }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
