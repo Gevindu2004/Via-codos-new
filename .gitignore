@@ -1,14 +1,46 @@
-# Python cache from the page generator
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js & TypeScript build outputs
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Environment, Secret Keys & Credentials
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+.secrets/
+secrets/
+
+# Local SQLite DB & Logs
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+*.log
+
+# Runtime uploads & storage
+public/uploads/*
+!public/uploads/.gitkeep
+storage/signed-pdfs/*
+storage/interviews/*
+storage/cvs/*
+
+# Legacy / OS
 _generator/__pycache__/
 *.pyc
-
-# OS junk
 Thumbs.db
 .DS_Store
 desktop.ini
-
-# original unprocessed logo (logo.png is the one the site uses)
-assets/logo.jpeg
-
-# original watermarked hero video (hero.mp4 is the cropped one)
-assets/hero_original_backup.mp4
+public/assets/logo.jpeg
+public/assets/hero_original_backup.mp4

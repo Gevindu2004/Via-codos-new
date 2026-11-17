@@ -118,6 +118,15 @@ def header(p, home=False):
         mega_link(p + "portfolio/index.html", "layers", "Portfolio & Case Studies"),
         mega_link(p + "contact.html", "mail", "Contact Us"),
     ]
+    tp_links = [
+        mega_link(p + "legal/terms-and-conditions.html", "book", "Terms & Conditions"),
+        mega_link(p + "legal/privacy-policy-2.html", "lock", "Privacy Policy"),
+        mega_link(p + "legal/refund-policy.html", "tagicon", "Refund Policy"),
+        mega_link(p + "legal/sla.html", "check", "Service Level Agreement (SLA)"),
+        mega_link(p + "legal/acceptable-use.html", "shield", "Acceptable Use Policy"),
+        mega_link(p + "legal/dpa.html", "layers", "Data Processing Agreement"),
+        mega_link(p + "legal/staff-augmentation-docs.html", "users", "Staff Augmentation Docs"),
+    ]
     cls = "header on-dark" if home else "header solid"
     return """<a class="skip-link" href="#main">Skip to main content</a>
 <header class="%s">
@@ -153,6 +162,10 @@ def header(p, home=False):
     <button class="nav-link" type="button">Company</button>
     <div class="mega"><div class="mega-col"><h5>Company</h5>%s</div></div>
    </div>
+   <div class="nav-item has-mega">
+    <button class="nav-link" type="button">Terms &amp; Policies</button>
+    <div class="mega"><div class="mega-col"><h5>Terms &amp; Policies</h5>%s</div></div>
+   </div>
    <div class="nav-item"><a class="nav-link" href="%sinsights/index.html">Insights</a></div>
    <div class="nav-cta"><a class="btn btn-primary btn-sm" href="%scontact.html">Book a Free Consultation %s</a></div>
   </nav>
@@ -161,7 +174,7 @@ def header(p, home=False):
 """ % (cls, p, p, "".join(ind_links[:half]), "".join(ind_links[half:]), p,
        "".join(sv_cols["Talent & Products"]), "".join(sv_cols["Custom Development"]),
        "".join(sv_cols["Run & Scale"]), p,
-       "".join(why_links), "".join(co_links), p, p, I["arrow"])
+       "".join(why_links), "".join(co_links), "".join(tp_links), p, p, I["arrow"])
 
 def footer(p):
     ind = "".join('<a href="%sindustries/%s.html">%s</a>' % (p, i["slug"], i["name"]) for i in INDUSTRIES)
@@ -199,9 +212,10 @@ def footer(p):
   <div class="footer-bottom">
    <span>© 2026 Via Codos Private Limited. All rights reserved.</span>
    <div class="footer-legal">
-    <a href="%slegal/privacy-policy.html">Privacy Policy</a>
-    <a href="%slegal/terms-of-service.html">Terms of Service</a>
-    <a href="%slegal/nda-security.html">NDA &amp; Security Commitment</a>
+    <a href="%slegal/privacy-policy-2.html">Privacy Policy</a>
+    <a href="%slegal/terms-and-conditions.html">Terms &amp; Conditions</a>
+    <a href="%slegal/refund-policy.html">Refund Policy</a>
+    <a href="%slegal/nda-security.html">NDA &amp; Security</a>
    </div>
   </div>
  </div>
@@ -213,7 +227,7 @@ def footer(p):
 <script src="%sjs/main.js" defer></script>
 </body>
 </html>""" % (p, I["pin"], I["phone"], I["mail"], ind, srv, p, p, p, p, p, p, p, p, p, p, p,
-              p, p, p, I["up"], WA_LINK, I["wa"], p)
+              p, p, p, p, I["up"], WA_LINK, I["wa"], p)
 
 def video_block(name, poster, video, rel=""):
     return """<div class="video-wrap reveal">
@@ -1030,6 +1044,174 @@ NDA = """
 <h2>Questions About Security or Confidentiality</h2>
 <p>If you'd like to review our standard NDA template before starting a conversation, or have specific security or compliance requirements, contact us directly: Email: <a href="mailto:info@viacodos.com">info@viacodos.com</a> · WhatsApp: +94 76 904 7552</p>"""
 
+REFUND = """
+<p>Thank you for choosing Via Codos (PVT) LTD. We provide digital products and services including custom software, websites, APIs, and staff augmentation. Because our offerings are largely digital and service-based, our refund terms differ from those of physical goods retailers. Please read this policy carefully before making a purchase.</p>
+<h2>Eligibility for Refunds</h2>
+<p>You may request a refund within 5 days of your purchase date, subject to the conditions below.</p>
+<h2>What Qualifies for a Full Refund</h2>
+<p>A full refund is generally issued when:</p>
+<ul><li>We have not yet started work on your project or service after payment.</li>
+<li>We are unable to deliver the agreed service within the committed timeframe due to a failure on our part.</li>
+<li>The delivered work is materially different from what was agreed upon in the project scope, and we are unable to correct it through revisions.</li>
+<li>A staff augmentation engagement cannot commence as scheduled due to our failure to provide the agreed resource.</li></ul>
+<h2>Non-Returnable / Non-Refundable Items</h2>
+<p>Once development or delivery has begun, the following are non-returnable but may be eligible for revisions instead of a refund:</p>
+<ul><li>APIs (custom-built or integrated)</li><li>Software products</li><li>Websites</li></ul>
+<p>We will work with you to resolve issues through revisions rather than a refund wherever possible, provided the request falls within the agreed project scope.</p>
+<h2>Staff Augmentation Services</h2>
+<p>Refunds or terminations for staff augmentation engagements are governed by the terms of the signed Non-Disclosure Agreement (NDA) and/or service contract specific to your engagement. In cases of dissatisfaction with an assigned resource, our priority is to replace the staff member with a suitable alternative rather than issue a refund.</p>
+<h2>Return Shipping</h2>
+<p>Not applicable — all our products and services are delivered digitally.</p>
+<h2>Processing Time</h2>
+<p>Approved refunds will be processed within 1–4 working days. Please note it may take additional time for the funds to reflect in your account, depending on your payment provider (PayHere).</p>
+<h2>Contact Us</h2>
+<p>For any questions or refund requests, please contact us at <a href="mailto:info@viacodos.com">info@viacodos.com</a>.</p>
+<p><em>This Refund Policy is governed by the laws of Sri Lanka.</em></p>"""
+
+PRIVACY2 = """
+<p>At Via Codos (PVT) LTD ("we," "us," "our"), we are committed to protecting the privacy and security of our clients' personal information. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website or engage our services. By using our website or services, you consent to the practices described in this policy.</p>
+<h2>Information We Collect</h2>
+<p>When you visit our website or engage with us, we may collect:</p>
+<ul><li>Personal identification information (such as your name, company name, email address, and phone number) provided voluntarily when you contact us or request our services.</li>
+<li>Project-related information necessary to deliver software, website, API, or staff augmentation services.</li>
+<li>Payment and billing information necessary to process transactions, securely handled through our third-party payment processor, PayHere.</li></ul>
+<h2>Use of Information</h2>
+<p>We use the information we collect to:</p>
+<ul><li>Deliver, manage, and support the services or projects you have engaged us for.</li>
+<li>Communicate with you regarding your project, invoices, or support requests.</li>
+<li>Process payments through our payment gateway provider, PayHere.</li>
+<li>Improve our services based on client feedback.</li>
+<li>Detect and prevent fraud or unauthorized activity.</li></ul>
+<h2>Information Sharing</h2>
+<p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except:</p>
+<ul><li><strong>Payment processing:</strong> Your payment information is processed securely through PayHere, our trusted payment gateway provider.</li>
+<li><strong>Legal requirements:</strong> We may disclose information if required by law or in response to a valid legal request.</li></ul>
+<h2>Data Security</h2>
+<p>We implement reasonable industry-standard security measures to protect your personal and project information from unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.</p>
+<h2>Data Retention</h2>
+<p>We retain client and project information for as long as necessary to fulfill the purposes outlined in this policy, or as required by law or contractual obligations (including NDAs).</p>
+<h2>Changes to This Privacy Policy</h2>
+<p>We may update this Privacy Policy from time to time. Any changes will be posted on this page with a revised "last updated" date.</p>
+<h2>Contact Us</h2>
+<p>If you have questions or concerns regarding this Privacy Policy or how we handle your personal information, please contact us at <a href="mailto:info@viacodos.com">info@viacodos.com</a>.</p>
+<p><em>This Privacy Policy is governed by the laws of Sri Lanka.</em></p>"""
+
+TERMS_COND = """
+<p>Welcome to Via Codos (PVT) LTD ("Company," "we," "us," "our"). These Terms and Conditions govern your use of our website and the purchase of our digital products and services, including custom software, websites, APIs, and staff augmentation. By accessing our website or engaging our services, you agree to comply with these terms. Please read them carefully.</p>
+<h2>Use of the Website and Services</h2>
+<ul><li>You must be at least 18 years old to engage our services or make purchases.</li>
+<li>You are responsible for maintaining the confidentiality of any account or project-related credentials shared with you.</li>
+<li>You agree to provide accurate and current information when engaging our services.</li>
+<li>You may not use our website or services for any unlawful or unauthorized purposes.</li></ul>
+<h2>Services and Pricing</h2>
+<ul><li>We strive to provide accurate descriptions and pricing for our services. However, final scope, pricing, and timelines are confirmed through a project agreement or quotation prior to commencement.</li>
+<li>Prices are subject to change without notice for new engagements; agreed pricing for active projects will not change without mutual consent.</li></ul>
+<h2>Orders, Payments, and Delivery</h2>
+<ul><li>By engaging our services and making payment, you are confirming your agreement to the applicable project scope.</li>
+<li>We reserve the right to decline or cancel any engagement for reasons including but not limited to resource availability, scope clarity, or suspected fraudulent activity.</li>
+<li>Payments are processed securely through our third-party payment gateway, PayHere. We do not store your full payment details.</li>
+<li>Typical delivery timelines: a demo or preview version is generally provided within 1–2 days of project commencement, with the final deliverable and source files provided within 3–7 days, depending on project scope and complexity. Actual timelines will be confirmed in your project agreement.</li></ul>
+<h2>Revisions and Returns</h2>
+<ul><li>Software, websites, and API deliverables are non-returnable once delivery has commenced, but are eligible for revisions within the agreed project scope. Please refer to our Refund Policy for full details.</li>
+<li>Staff augmentation engagements are governed by a signed NDA and/or service contract, with staff replacement prioritized over termination in the event of dissatisfaction.</li></ul>
+<h2>Intellectual Property</h2>
+<ul><li>Unless otherwise agreed in writing, all source code, designs, and materials delivered as part of a completed and fully paid project become the property of the client upon final payment.</li>
+<li>All content on our website, including text, logos, and graphics, is the property of Via Codos (PVT) LTD and may not be reproduced without our prior written consent.</li></ul>
+<h2>Confidentiality</h2>
+<p>We treat all client project information as confidential and, where applicable, engagements are governed by a mutually signed Non-Disclosure Agreement (NDA).</p>
+<h2>Limitation of Liability</h2>
+<ul><li>In no event shall Via Codos (PVT) LTD, its directors, or employees be liable for any indirect, incidental, or consequential damages arising from the use of our website, products, or services.</li>
+<li>We make reasonable efforts to ensure the quality and functionality of our deliverables but do not guarantee fitness for purposes outside the agreed project scope.</li></ul>
+<h2>Amendments and Termination</h2>
+<p>We reserve the right to modify these Terms and Conditions at any time without prior notice. It is your responsibility to review these terms periodically. Active project agreements and NDAs take precedence over general website terms where applicable.</p>
+<h2>Governing Law</h2>
+<p>These Terms and Conditions are governed by the laws of Sri Lanka.</p>
+<h2>Contact Us</h2>
+<p>For any questions regarding these Terms and Conditions, please contact us at <a href="mailto:info@viacodos.com">info@viacodos.com</a>.</p>"""
+
+SLA = """
+<p>This Service Level Agreement describes the standard of service Via Codos (Pvt) Ltd ("Via Codos," "we," "us") commits to for clients using our hosted, maintained, or supported software, websites, APIs, and systems. Specific projects may have additional terms defined in your individual project agreement, which will take precedence over this general SLA where they differ.</p>
+<h2>Support Response Times</h2>
+<p>For active clients with ongoing support or maintenance arrangements, we commit to responding to support requests within 24 hours on business days (Monday–Friday, excluding Sri Lankan public holidays). "Response" means acknowledgment and initial assessment of the issue, not necessarily full resolution.</p>
+<h2>Uptime Commitment</h2>
+<p>For systems, websites, or APIs that we host and maintain on your behalf, we target a monthly uptime of 99%. This excludes:</p>
+<ul><li>Scheduled maintenance windows (which we will notify you of in advance where possible).</li>
+<li>Downtime caused by third-party infrastructure providers, DNS, or hosting outside our control.</li>
+<li>Downtime caused by client-side misconfiguration or unauthorized changes.</li></ul>
+<h2>Issue Severity &amp; Handling</h2>
+<ul><li><strong>Critical (system down / major function unavailable):</strong> Acknowledged within 24 hours; prioritized for immediate investigation.</li>
+<li><strong>High (significant feature degraded):</strong> Acknowledged within 24 hours; addressed in the next available development cycle.</li>
+<li><strong>Standard (minor bugs, cosmetic issues, feature requests):</strong> Acknowledged within 24 hours; scheduled based on agreed project timelines.</li></ul>
+<h2>Maintenance &amp; Updates</h2>
+<p>Routine maintenance, security patches, and updates to hosted systems will be scheduled to minimize disruption, with advance notice provided for any maintenance expected to cause downtime.</p>
+<h2>Exclusions</h2>
+<p>This SLA applies only to systems actively hosted or maintained by Via Codos under a current service agreement. It does not apply to source-code-only deliveries where the client is responsible for their own hosting and infrastructure.</p>
+<h2>Contact for Support</h2>
+<p>Email: <a href="mailto:info@viacodos.com">info@viacodos.com</a> · WhatsApp: +94 76 904 7552</p>
+<p><em>This SLA is a general commitment and does not override specific terms agreed in your individual Master Service Agreement or Statement of Work.</em></p>"""
+
+AUP = """
+<p>This Acceptable Use Policy ("AUP") governs the use of software, APIs, and systems developed, hosted, or maintained by Via Codos (Pvt) Ltd. It applies to all clients and end-users accessing services we provide. By using our software, websites, or APIs, you agree to comply with this policy.</p>
+<h2>Permitted Use</h2>
+<p>You may use our software, websites, and APIs only for the lawful business purposes agreed upon in your project scope or service agreement.</p>
+<h2>Prohibited Activities</h2>
+<p>You may not:</p>
+<ul><li>Use our APIs or software to violate any applicable law or regulation.</li>
+<li>Attempt to reverse-engineer, decompile, or extract source code from delivered software or APIs beyond what is explicitly licensed to you.</li>
+<li>Exceed agreed API rate limits or attempt to circumvent rate-limiting, authentication, or access controls.</li>
+<li>Resell, sublicense, or redistribute access to our APIs or hosted systems without prior written consent.</li>
+<li>Use our systems to transmit malware, conduct unauthorized security testing, or interfere with the integrity of any system.</li>
+<li>Use our platforms to harvest data, spam, or engage in fraudulent activity.</li>
+<li>Share API keys, credentials, or access tokens with unauthorized third parties.</li></ul>
+<h2>Rate Limits &amp; Fair Use</h2>
+<p>Where APIs are provided with defined rate limits, these limits are specified in your project documentation or API documentation. Excessive or abusive usage beyond agreed limits may result in throttling or suspension of access.</p>
+<h2>Enforcement</h2>
+<p>Violation of this AUP may result in suspension or termination of access to the affected system, at our discretion, with notice where practical. We will make reasonable efforts to resolve issues collaboratively before suspending access, except in cases of serious abuse, security threats, or illegal activity.</p>
+<h2>Reporting Abuse</h2>
+<p>If you believe our systems are being misused, please contact us at <a href="mailto:info@viacodos.com">info@viacodos.com</a>.</p>
+<p><em>This policy works alongside our Terms and Conditions and any specific service agreement governing your engagement.</em></p>"""
+
+DPA = """
+<p>This Data Processing Agreement summary describes how Via Codos (Pvt) Ltd handles personal data on behalf of clients when acting as a data processor, in alignment with the EU General Data Protection Regulation (GDPR). Where we build, host, or maintain systems that process personal data belonging to your customers or users, this summary outlines our commitments. A full, signed DPA will be provided as part of your project agreement where applicable.</p>
+<h2>Roles</h2>
+<p>In most engagements, the client acts as the <strong>Data Controller</strong> (determining the purposes and means of processing personal data), and Via Codos acts as the <strong>Data Processor</strong> (processing data only on the client's documented instructions).</p>
+<h2>Scope of Processing</h2>
+<p>We process personal data only:</p>
+<ul><li>To the extent necessary to deliver, host, or maintain the software, website, or API agreed in your project scope.</li>
+<li>Strictly according to your documented instructions, unless required otherwise by law.</li></ul>
+<h2>Our Commitments as Processor</h2>
+<ul><li>We will not use personal data for any purpose other than fulfilling the agreed service.</li>
+<li>We ensure that individuals authorized to process personal data (our engineers and staff) are bound by confidentiality obligations, as outlined in our NDA &amp; Security Commitment.</li>
+<li>We implement appropriate technical and organizational security measures to protect personal data, consistent with GDPR Article 32.</li>
+<li>We will assist you, where reasonably required, in responding to data subject requests (access, correction, deletion, etc.).</li>
+<li>We will notify you without undue delay upon becoming aware of a personal data breach affecting data we process on your behalf.</li>
+<li>We do not engage sub-processors to handle client personal data without prior notice, and where used, sub-processors are bound to equivalent data protection obligations.</li>
+<li>Upon termination of services, we will delete or return all personal data processed, unless retention is required by law.</li></ul>
+<h2>International Data Transfers</h2>
+<p>Where personal data is transferred outside the European Economic Area (EEA), we will ensure appropriate safeguards are in place, such as Standard Contractual Clauses (SCCs), where applicable to your engagement.</p>
+<h2>Full DPA</h2>
+<p>This page is a summary for informational purposes. Clients requiring a full, legally binding DPA (e.g., for GDPR compliance documentation) should request our standard DPA template, which will be executed alongside your project agreement.</p>
+<h2>Contact</h2>
+<p>For data protection queries or to request a full DPA: <a href="mailto:info@viacodos.com">info@viacodos.com</a></p>"""
+
+STAFFAUG = """
+<p>When you engage Via Codos for staff augmentation, your engagement is typically supported by the following documents, exchanged in this general order:</p>
+<h2>1. Non-Disclosure Agreement (NDA)</h2>
+<p>Signed before any project details, credentials, or system access are shared. Covers confidentiality of your business information and ours. (See our <a href="nda-security.html">NDA &amp; Security Commitment</a> page for details.)</p>
+<h2>2. Master Service Agreement (MSA)</h2>
+<p>The overarching contract that governs the general terms of the engagement: payment terms, liability, intellectual property ownership, termination conditions, and dispute resolution. Signed once, and typically covers all future work under this engagement.</p>
+<h2>3. Statement of Work (SOW) / Staff Assignment Agreement</h2>
+<p>A document specific to each engagement or resource request, outlining: role(s) requested, required skills/seniority, engagement duration, working hours/timezone alignment, monthly rate or billing structure, and reporting lines.</p>
+<h2>4. Timesheet &amp; Invoicing Agreement</h2>
+<p>Defines how hours are tracked and approved, invoicing cycle (typically monthly), and payment terms.</p>
+<h2>5. Replacement &amp; Termination Terms</h2>
+<p>Often part of the MSA or SOW. Defines the process if a client is unsatisfied with an assigned resource (staff replacement is prioritized), notice periods for ending an engagement, and handover/offboarding procedures.</p>
+<h2>6. Individual Confidentiality Agreements</h2>
+<p>Signed by each engineer/staff member assigned to your project, separate from the client-facing NDA, ensuring your data and code remain protected even at the individual level.</p>
+<h2>Typical Flow</h2>
+<p>NDA → MSA (once) → SOW per engagement/role → ongoing timesheets/invoicing → replacement or offboarding terms as needed.</p>
+<p><em>This is a general guide. Actual documents and their order may be adapted based on the size and nature of your engagement. Contact <a href="mailto:info@viacodos.com">info@viacodos.com</a> to request our standard templates.</em></p>"""
+
 def build_legal():
     legal_page("privacy-policy", "Privacy Policy", "Privacy Policy | Via Codos",
                "How Via Codos collects, uses, and protects your information.", "Legal", PRIVACY)
@@ -1037,6 +1219,21 @@ def build_legal():
                "The terms governing use of the Via Codos website and services.", "Legal", TERMS)
     legal_page("nda-security", "Our Confidentiality & Security Commitment", "NDA & Security Commitment | Via Codos",
                "The confidentiality and security standard Via Codos holds itself to on every engagement.", "Legal & Security", NDA)
+    # Terms & Policies dropdown pages
+    legal_page("terms-and-conditions", "Terms & Conditions", "Terms & Conditions | Via Codos",
+               "Terms and Conditions governing use of the Via Codos website, products, and services.", "Terms & Policies", TERMS_COND)
+    legal_page("privacy-policy-2", "Privacy Policy", "Privacy Policy | Via Codos",
+               "How Via Codos collects, uses, and safeguards your personal information.", "Terms & Policies", PRIVACY2)
+    legal_page("refund-policy", "Refund Policy", "Refund Policy | Via Codos",
+               "Via Codos's refund terms for digital products and services, governed by the laws of Sri Lanka.", "Terms & Policies", REFUND)
+    legal_page("sla", "Service Level Agreement", "Service Level Agreement (SLA) | Via Codos",
+               "Response times, uptime commitment, and issue handling for Via Codos hosted and maintained systems.", "Terms & Policies", SLA)
+    legal_page("acceptable-use", "Acceptable Use Policy", "Acceptable Use Policy | Via Codos",
+               "Acceptable use of software, APIs, and systems developed, hosted, or maintained by Via Codos.", "Terms & Policies", AUP)
+    legal_page("dpa", "Data Processing Agreement", "Data Processing Agreement (DPA) | Via Codos",
+               "How Via Codos handles personal data as a GDPR-aligned data processor on behalf of clients.", "Terms & Policies", DPA)
+    legal_page("staff-augmentation-docs", "Staff Augmentation — Document Guide", "Staff Augmentation Document Guide | Via Codos",
+               "The documents that typically support a Via Codos staff augmentation engagement, in order.", "Terms & Policies", STAFFAUG)
 
 # ----------------------------------------------------------------- assets note
 def build_assets_note():
