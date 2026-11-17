@@ -30,3 +30,4 @@ export async function GET(
     return NextResponse.json({ error: "Media file not found." }, { status: 404 });
   }
 }
+

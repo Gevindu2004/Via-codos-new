@@ -774,7 +774,11 @@ adminRouter.post("/admin/upload", mediaUpload.single("file"), async (req: Authen
 });
 
 // 7. CMS Content CRUD
-adminRouter.get("/admin/content", async (_req, res) => {
+adminRouter.get("/admin/content", async (req: AuthenticatedRequest, res) => {
+  if (!hasAdminRole(req.adminSession!, ["SUPER_ADMIN", "CONTENT_EDITOR"])) {
+    res.status(403).json({ error: "Insufficient role permissions." });
+    return;
+  }
   const [
     pages,
     categories,

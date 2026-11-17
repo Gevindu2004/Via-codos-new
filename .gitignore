@@ -50,6 +50,7 @@ prisma/*.db-shm
 # Runtime uploads & storage
 public/uploads/*
 !public/uploads/.gitkeep
+storage/uploads/*
 storage/signed-pdfs/*
 storage/interviews/*
 storage/cvs/*
