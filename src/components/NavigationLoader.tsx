@@ -67,6 +67,9 @@ function NavigationLoaderInner() {
     const video = videoRef.current;
     if (video) {
       try {
+        if (video.preload === "none") {
+          video.preload = "auto";
+        }
         video.currentTime = 0;
         void video.play();
       } catch {
@@ -146,6 +149,28 @@ function NavigationLoaderInner() {
   // Clean up timers on unmount
   useEffect(() => clearTimers, [clearTimers]);
 
+  // Defer preloading the 3MB loader video until after initial page paint completes
+  useEffect(() => {
+    const warmVideo = () => {
+      const video = videoRef.current;
+      if (video && video.preload === "none") {
+        video.preload = "auto";
+      }
+    };
+
+    const idleWindow = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const id = idleWindow.requestIdleCallback(warmVideo, { timeout: 3000 });
+      return () => idleWindow.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(warmVideo, 2000);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // Key out the light grey/white studio background from loding.mp4 onto a transparent canvas
   useEffect(() => {
     if (!mounted) return;
@@ -222,14 +247,14 @@ function NavigationLoaderInner() {
 
   return (
     <>
-      {/* Keep hidden preloaded video element ready for instant zero-lag playback */}
+      {/* Keep hidden video element ready without blocking initial landing page load */}
       <video
         ref={videoRef}
         src="/assets/loding.mp4"
         muted
         loop
         playsInline
-        preload="auto"
+        preload="none"
         aria-hidden="true"
         className="pointer-events-none fixed -top-[9999px] -left-[9999px] h-1 w-1 opacity-0"
       />

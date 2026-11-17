@@ -24,16 +24,37 @@ export default async function HomePage() {
   const [heroSetting, services, industries, caseStudies, saasProducts, talentCounts, testimonials] =
     await Promise.all([
       prisma.siteSetting.findUnique({ where: { key: "hero" } }),
-      prisma.service.findMany({ where: { status: "PUBLISHED" }, orderBy: { sortOrder: "asc" } }),
-      prisma.industry.findMany({ where: { status: "PUBLISHED" }, orderBy: { sortOrder: "asc" } }),
-      prisma.caseStudy.findMany({ where: { status: "PUBLISHED" }, orderBy: { sortOrder: "asc" } }),
-      prisma.saasProduct.findMany({ where: { status: "PUBLISHED" }, orderBy: { sortOrder: "asc" } }),
+      prisma.service.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, slug: true, name: true, groupName: true, icon: true, oneliner: true },
+      }),
+      prisma.industry.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, slug: true, name: true, icon: true },
+      }),
+      prisma.caseStudy.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, slug: true, name: true, sector: true, headline: true, clientDesc: true, imageUrl: true },
+      }),
+      prisma.saasProduct.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, slug: true, name: true, tagline: true, summary: true, metricsJson: true },
+      }),
       prisma.talentProfile.groupBy({
         by: ["category"],
         where: { status: "PUBLISHED", placementStatus: "AVAILABLE" },
         _count: true,
       }),
-      prisma.testimonial.findMany({ where: { isVisible: true }, orderBy: { sortOrder: "asc" }, take: 3 }),
+      prisma.testimonial.findMany({
+        where: { isVisible: true },
+        orderBy: { sortOrder: "asc" },
+        take: 3,
+        select: { id: true, name: true, role: true, company: true, country: true, imageUrl: true, quote: true },
+      }),
     ]);
 
   const heroConfig = safeJsonParse<{
@@ -371,6 +392,8 @@ export default async function HomePage() {
                     <img
                       src={c.imageUrl}
                       alt={c.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105"
                     />
                     <span className="absolute top-4 left-4 rounded-full bg-[#0A0F1A]/85 px-3 py-1 text-[11px] font-semibold text-white">
@@ -418,6 +441,8 @@ export default async function HomePage() {
                     <img
                       src={t.imageUrl || "/assets/client_1.jpg"}
                       alt={t.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-10 w-10 rounded-full object-cover border border-slate-200"
                     />
                     <div>

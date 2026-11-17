@@ -66,10 +66,8 @@ export function ParallaxLogoHero({
   const [scrollOffset, setScrollOffset] = useState(0);
   const [activePillar, setActivePillar] = useState(0);
   const [isPillarPaused, setIsPillarPaused] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
@@ -167,10 +165,10 @@ export function ParallaxLogoHero({
       </div>
 
       <div
-        className="relative z-10 mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 transition-all duration-700 ease-out"
+        className="relative z-10 mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8"
         style={{
-          opacity: mounted ? Math.max(0.25, 1 - scrollOffset / 650) : 0,
-          transform: mounted ? `translateY(${scrollOffset * -0.05}px)` : "translateY(16px)",
+          opacity: scrollOffset > 0 ? Math.max(0.25, 1 - scrollOffset / 650) : 1,
+          transform: scrollOffset > 0 ? `translateY(${scrollOffset * -0.05}px)` : "translateY(0)",
         }}
       >
         {/* Compact Centered Enterprise Headline Block */}
