@@ -12,6 +12,13 @@ import {
   Lock,
   Sparkles,
   X,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Award,
+  Code2,
+  FileText,
 } from "lucide-react";
 import type { PublicTalentProfile } from "@/lib/sanitize";
 
@@ -87,7 +94,7 @@ export function TalentBrowser({
         return false;
       }
       if (searchQuery.trim()) {
-        const hay = `${p.profileCode} ${p.displayName || ""} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
+        const hay = `${p.profileCode} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
         if (!hay.includes(searchQuery.toLowerCase().trim())) return false;
       }
       return true;
@@ -147,7 +154,7 @@ export function TalentBrowser({
               Protected Talent Bench — Contact Details &amp; Photos Restricted Until Approved
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Every specialist is listed with their Profile ID, name, skills, experience, anonymized projects, and rate—while photos, CVs, and contact details remain locked until Admin approval. Click <strong>Request Full Profile</strong> to initiate dossier release.
+              Every specialist is listed strictly by their Staff Profile ID, skills, experience, and anonymized projects—while names, photos, CVs, and contact details remain locked until Admin approval. Click <strong>Request Full Profile</strong> to initiate dossier release.
             </p>
           </div>
         </div>
@@ -317,7 +324,7 @@ export function TalentBrowser({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold text-white bg-[#0A192F] px-3 py-1 rounded-md">
-                  {p.displayName || p.profileCode}
+                  {p.profileCode}
                 </span>
                 {p.placementStatus === "PLACED" && (
                   <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-bold uppercase">
@@ -361,12 +368,9 @@ export function TalentBrowser({
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-[#0A0F1A]">
-                  ${p.monthlyRateUsd.toLocaleString()}/mo
-                </div>
-                <div className="text-[10px] text-slate-500">${p.hourlyRateUsd}/hr equiv.</div>
-              </div>
+              <span className="text-[11px] font-medium text-slate-500">
+                Protected CV Preview
+              </span>
               <button
                 type="button"
                 disabled={p.placementStatus === "PLACED"}
@@ -388,92 +392,241 @@ export function TalentBrowser({
         ))}
       </div>
 
-      {/* Modal: Anonymized Projects Preview + Request Full Profile */}
+      {/* Modal: Authentic A4 CV Sheet (Personal Info Blurred) + Request Full Profile */}
       {selectedProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-2xl">
-            <div className="sticky top-0 bg-[#0A192F] text-white px-6 py-4 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold bg-white/15 px-2.5 py-0.5 rounded">
-                    {selectedProfile.displayName || selectedProfile.profileCode}
-                  </span>
-                  <span className="text-xs text-sky-300">{selectedProfile.domainName}</span>
-                </div>
-                <h3 className="font-heading text-lg font-bold mt-1">
-                  {selectedProfile.roleTitle}
-                </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-5 backdrop-blur-sm">
+          <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-2xl bg-slate-100 border border-slate-300 shadow-2xl">
+            {/* Modal Top Bar */}
+            <div className="sticky top-0 z-20 bg-[#0A192F] text-white px-5 sm:px-6 py-3.5 flex items-center justify-between border-b border-white/10">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/15 px-2.5 py-1 rounded">
+                  <FileText className="h-3.5 w-3.5 text-sky-300" />
+                  {selectedProfile.profileCode}
+                </span>
+                <span className="text-xs font-medium text-sky-300">
+                  {selectedProfile.domainName} · Protected A4 Curriculum Vitae
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedProfile(null)}
-                className="rounded-lg p-1.5 hover:bg-white/10"
+                aria-label="Close CV preview"
+                className="rounded-lg p-1.5 hover:bg-white/10 transition"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
-              <div className="grid grid-cols-3 gap-3 rounded-xl bg-[#F8FAFC] p-4 border border-slate-200 text-center">
-                <div>
-                  <div className="text-[11px] text-slate-500">Experience</div>
-                  <div className="font-bold text-sm text-[#0A0F1A]">
-                    {selectedProfile.yearsExperience} Years
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Availability</div>
-                  <div className="font-bold text-sm text-[#0A0F1A]">
-                    {selectedProfile.availability.replace("_", " ")}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Monthly Rate</div>
-                  <div className="font-bold text-sm text-[#1D4ED8]">
-                    ${selectedProfile.monthlyRateUsd.toLocaleString()} USD
-                  </div>
-                </div>
-              </div>
+            <div className="p-4 sm:p-7 space-y-5">
+              {/* A4 Paper Sheet */}
+              <div className="mx-auto w-full max-w-[680px] bg-white border border-slate-200/90 shadow-[0_8px_30px_rgb(15,23,42,0.12)] rounded-sm overflow-hidden">
+                {/* Subtle A4 Accent Rule */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-[#0A192F] via-[#1D4ED8] to-[#0A192F]" />
 
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Anonymized Summary &amp; Core Skills
-                </h4>
-                <p className="text-sm text-slate-700 leading-relaxed">{selectedProfile.summary}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {selectedProfile.skills.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-[#0A0F1A]"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                {/* CV Header Block: Staff ID & Role visible; Personal Info Redacted/Blurred */}
+                <div className="px-6 sm:px-9 pt-7 pb-6 border-b border-slate-200 bg-gradient-to-b from-slate-50/70 to-white">
+                  <div className="flex items-start gap-4">
+                    {/* Blurred Avatar Silhouette */}
+                    <div className="relative h-16 w-16 shrink-0 rounded-full border border-slate-300 bg-slate-200/80 flex items-center justify-center overflow-hidden">
+                      <User className="h-9 w-9 text-slate-500 blur-[4px] select-none" />
+                      <span
+                        title="Candidate photo redacted until NDA approval"
+                        className="absolute bottom-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#0A192F] text-white shadow"
+                      >
+                        <Lock className="h-2.5 w-2.5" />
+                      </span>
+                    </div>
 
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Anonymized Project Track Record
-                </h4>
-                <div className="space-y-3">
-                  {selectedProfile.projects.map((proj, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-200 bg-white p-4 space-y-1.5"
-                    >
-                      <div className="font-semibold text-sm text-[#0A192F]">{proj.title}</div>
-                      <p className="text-xs text-slate-600">{proj.scope}</p>
-                      <p className="text-xs font-medium text-emerald-700">
-                        Outcome: {proj.outcome}
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      {/* Crisp Public Role Title */}
+                      <h3 className="font-heading text-lg sm:text-xl font-bold text-[#0A0F1A] leading-snug">
+                        {selectedProfile.roleTitle}
+                      </h3>
+
+                      {/* Blurred Name Placeholder */}
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span
+                          aria-hidden="true"
+                          className="font-heading text-base font-bold tracking-tight text-slate-700 blur-[5.5px] select-none pointer-events-none"
+                        >
+                          Candidate Full Name Hidden
+                        </span>
+                      </div>
+
+                      {/* Blurred Contact Details Row (Zero real PII in DOM) */}
+                      <div
+                        aria-hidden="true"
+                        className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] text-slate-600 blur-[4.5px] select-none pointer-events-none"
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          candidate.profile@viacodos-private.lk
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          +94 77 000 0000
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          Colombo / Galle, Sri Lanka
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Highlight Bar */}
+                  <div className="mt-5 grid grid-cols-3 gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                        Commercial Experience
+                      </span>
+                      <span className="font-bold text-[#0A0F1A]">
+                        {selectedProfile.yearsExperience}+ Years
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                        Availability
+                      </span>
+                      <span className="font-bold text-emerald-700">
+                        {selectedProfile.availability.replace("_", " ")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                        Practice Domain
+                      </span>
+                      <span className="font-bold text-[#0A192F] truncate block">
+                        {selectedProfile.domainName}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* A4 Document Sections */}
+                <div className="px-6 sm:px-9 py-6 space-y-6">
+                  {/* 1. Experience Profile */}
+                  <section className="space-y-2">
+                    <h4 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A192F] border-b border-slate-200 pb-1.5">
+                      <Briefcase className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                      Professional Experience Summary
+                    </h4>
+                    <p className="text-[13px] text-slate-700 leading-relaxed">
+                      {selectedProfile.summary}
+                    </p>
+                    {selectedProfile.industries.length > 0 && (
+                      <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
+                        <span className="font-semibold text-slate-500 mr-1">Industries:</span>
+                        {selectedProfile.industries.map((ind) => (
+                          <span
+                            key={ind}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-700"
+                          >
+                            {ind}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* 2. Core Technical Stack */}
+                  <section className="space-y-2.5">
+                    <h4 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A192F] border-b border-slate-200 pb-1.5">
+                      <Code2 className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                      Core Tech Stack &amp; Competencies
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedProfile.skills.map((s) => (
+                        <span
+                          key={s}
+                          className="rounded-md border border-slate-200 bg-[#F8FAFC] px-2.5 py-1 text-xs font-semibold text-[#0A192F]"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* 3. Projects Already Delivered */}
+                  <section className="space-y-3">
+                    <h4 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A192F] border-b border-slate-200 pb-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                      Key Delivered Projects &amp; Production Track Record
+                    </h4>
+                    <div className="space-y-3.5">
+                      {selectedProfile.projects.map((proj, idx) => (
+                        <div
+                          key={idx}
+                          className="relative pl-4 border-l-2 border-[#1D4ED8]/40 space-y-1.5 pb-1"
+                        >
+                          <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <div className="font-bold text-sm text-[#0A192F]">{proj.title}</div>
+                            <span
+                              aria-hidden="true"
+                              className="text-[11px] text-slate-500 blur-[4px] select-none pointer-events-none"
+                            >
+                              Enterprise Client Corp.
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">{proj.scope}</p>
+                          <p className="text-xs font-semibold text-emerald-700">
+                            Outcome: {proj.outcome}
+                          </p>
+                          {proj.stack && proj.stack.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {proj.stack.map((tech) => (
+                                <span
+                                  key={tech}
+                                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* 4. Vetting & Masked Personal Background Footer */}
+                  <section className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#0A192F]">
+                        <Award className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                        Via Codos Verification
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        4-Stage Vetted Specialist · Live Technical Screen, Architecture Review &amp; Background Checked
                       </p>
                     </div>
-                  ))}
+                    <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-200 pt-3 sm:pt-0 sm:pl-4">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <Lock className="h-3 w-3" />
+                        Education, ID &amp; References
+                      </div>
+                      <div
+                        aria-hidden="true"
+                        className="text-xs text-slate-600 blur-[4.5px] select-none pointer-events-none space-y-0.5"
+                      >
+                        <div>B.Sc. Computer Science · University Institute</div>
+                        <div>NIC / Passport &amp; 2 Senior Engineering Referees</div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* A4 Sheet Bottom Margin Stamp */}
+                <div className="border-t border-slate-100 bg-slate-50/70 px-6 sm:px-9 py-2.5 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Via Codos (PVT) LTD · Standardized Talent Dossier ({selectedProfile.profileCode})</span>
+                  <span className="inline-flex items-center gap-1 text-slate-500 font-medium">
+                    <Lock className="h-2.5 w-2.5" /> Identity &amp; contact unblurred upon NDA approval
+                  </span>
                 </div>
               </div>
 
               {/* Request Full Profile Action */}
-              <div className="rounded-xl border border-[#0A192F]/20 bg-[#F8FAFC] p-5 space-y-3">
+              <div className="mx-auto w-full max-w-[680px] rounded-xl border border-[#0A192F]/20 bg-white p-5 shadow-sm space-y-3">
                 <div className="flex items-center gap-2 text-sm font-bold text-[#0A192F]">
                   <ShieldCheck className="h-4 w-4 text-[#1D4ED8]" />
                   Request Full Profile &amp; Start Client Pipeline

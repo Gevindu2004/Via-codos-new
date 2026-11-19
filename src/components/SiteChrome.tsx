@@ -1,13 +1,13 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/sanitize";
-import { getAdminSession, getClientSession } from "@/lib/auth";
+import { getAdminSession, getClientSession, getEngineerSession } from "@/lib/auth";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { BackToTopButton } from "./ScrollAnimator";
 
 export async function getSiteChromeData() {
-  const [menus, brandSetting, clientSession, adminSession] = await Promise.all([
+  const [menus, brandSetting, clientSession, adminSession, engineerSession] = await Promise.all([
     prisma.menuItem.findMany({
       where: { isVisible: true },
       orderBy: { sortOrder: "asc" },
@@ -15,14 +15,17 @@ export async function getSiteChromeData() {
     prisma.siteSetting.findUnique({ where: { key: "brand" } }),
     getClientSession(),
     getAdminSession(),
+    getEngineerSession(),
   ]);
 
   const brand = safeJsonParse<Record<string, string>>(brandSetting?.valueJson, {});
   const loggedInUser = clientSession
     ? { name: clientSession.name, href: "/portal", kind: "client" as const }
-    : adminSession
-      ? { name: adminSession.name, href: "/admin", kind: "admin" as const }
-      : null;
+    : engineerSession
+      ? { name: engineerSession.profileCode, href: "/engineer", kind: "engineer" as const }
+      : adminSession
+        ? { name: adminSession.name, href: "/admin", kind: "admin" as const }
+        : null;
 
   return {
     headerMenus: menus.filter((m) => m.location === "HEADER"),

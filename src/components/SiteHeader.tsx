@@ -16,7 +16,7 @@ export interface NavMenuItem {
 export interface HeaderUserInfo {
   name: string;
   href: string;
-  kind: "client" | "admin";
+  kind: "client" | "admin" | "engineer";
 }
 
 interface SiteHeaderProps {
@@ -43,11 +43,19 @@ export function SiteHeader({
       const endpoint =
         loggedInUser.kind === "admin"
           ? "/api/admin/auth/logout"
-          : "/api/portal/auth/logout";
+          : loggedInUser.kind === "engineer"
+            ? "/api/engineer/auth/logout"
+            : "/api/portal/auth/logout";
       await fetch(endpoint, { method: "POST" });
       setLogoutModalOpen(false);
       setMobileOpen(false);
-      router.push(loggedInUser.kind === "admin" ? "/admin/login" : "/portal/login");
+      router.push(
+        loggedInUser.kind === "admin"
+          ? "/admin/login"
+          : loggedInUser.kind === "engineer"
+            ? "/engineer/login"
+            : "/portal/login"
+      );
       router.refresh();
     } finally {
       setLoggingOut(false);
@@ -107,12 +115,20 @@ export function SiteHeader({
               </button>
             </div>
           ) : (
-            <Link
-              href="/portal"
-              className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0A0F1A] hover:border-[#0A192F] transition"
-            >
-              Client Login
-            </Link>
+            <>
+              <Link
+                href="/engineer/login"
+                className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-[#0A192F] transition"
+              >
+                Engineer Portal
+              </Link>
+              <Link
+                href="/portal"
+                className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-[#0A0F1A] hover:border-[#0A192F] transition"
+              >
+                Client Login
+              </Link>
+            </>
           )}
           <Link
             href="/staff-augmentation/request"
@@ -167,20 +183,27 @@ export function SiteHeader({
                 </button>
               </>
             ) : (
-              <Link
-                href="/portal"
-                onClick={() => setMobileOpen(false)}
-                className="text-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#0A0F1A]"
-              >
-                Client Portal
-              </Link>
+              <>
+                <Link
+                  href="/portal"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#0A0F1A]"
+                >
+                  Client Portal
+                </Link>
+                <Link
+                  href="/engineer/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#0A192F]"
+                >
+                  Engineer Portal
+                </Link>
+              </>
             )}
             <Link
               href="/staff-augmentation/request"
               onClick={() => setMobileOpen(false)}
-              className={`text-center rounded-lg bg-[#0A192F] px-3 py-2 text-xs font-semibold text-white ${
-                loggedInUser ? "col-span-2" : ""
-              }`}
+              className="col-span-2 text-center rounded-lg bg-[#0A192F] px-3 py-2 text-xs font-semibold text-white"
             >
               Request Engineers
             </Link>

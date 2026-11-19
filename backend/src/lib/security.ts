@@ -16,6 +16,7 @@ interface LockRecord {
 const globalForSec = globalThis as unknown as {
   __vcBackendRateLimits?: Map<string, RateRecord>;
   __vcBackendLoginLocks?: Map<string, LockRecord>;
+  __vcBackendEphemeralEncKey?: string;
 };
 
 const rateMap = (globalForSec.__vcBackendRateLimits ??= new Map());
@@ -88,7 +89,13 @@ export function clearLoginFailures(key: string): void {
 }
 
 function getEncryptionKey(): Buffer {
-  const base = process.env.DATA_ENCRYPTION_KEY || process.env.AUTH_SECRET || "ephemeral-fallback";
+  let base = process.env.DATA_ENCRYPTION_KEY || process.env.AUTH_SECRET;
+  if (!base) {
+    if (!globalForSec.__vcBackendEphemeralEncKey) {
+      globalForSec.__vcBackendEphemeralEncKey = crypto.randomBytes(32).toString("hex");
+    }
+    base = globalForSec.__vcBackendEphemeralEncKey;
+  }
   return crypto.createHash("sha256").update(`vc-enc:${base}`).digest();
 }
 

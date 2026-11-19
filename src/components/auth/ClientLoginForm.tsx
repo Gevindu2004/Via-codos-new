@@ -66,6 +66,7 @@ export function ClientLoginForm() {
             <label className="block text-xs font-semibold text-[#0A0F1A] mb-1">Work Email</label>
             <input
               required
+              suppressHydrationWarning
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -77,6 +78,7 @@ export function ClientLoginForm() {
             <label className="block text-xs font-semibold text-[#0A0F1A] mb-1">Password</label>
             <input
               required
+              suppressHydrationWarning
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -86,6 +88,7 @@ export function ClientLoginForm() {
 
           <button
             type="submit"
+            suppressHydrationWarning
             disabled={loading}
             className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0A192F] py-3 text-sm font-bold text-white hover:bg-[#1E3A8A] disabled:opacity-50"
           >

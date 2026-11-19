@@ -8,8 +8,16 @@ import { dispatchEmail } from "../lib/email";
 import { generateSignedAgreementPdf } from "../lib/pdf";
 import { recordAuditLog } from "../lib/audit";
 import { getAdminSessionFromRequest, getClientSessionFromRequest } from "../lib/auth";
-import { slugify } from "../lib/sanitize";
+import { slugify, safeJsonParse } from "../lib/sanitize";
 import { checkRateLimit, resolveUploadStorageDir, validateAndScanUploadBuffer } from "../lib/security";
+import {
+  pushLiveAudioChunk,
+  pushLiveSignal,
+  readLiveSnapshot,
+  touchClientPresence,
+  touchEngineerPresence,
+  type LiveSignal,
+} from "../lib/live-interview";
 
 export const publicRouter = Router();
 
@@ -254,6 +262,193 @@ publicRouter.get("/interview/:token", async (req, res) => {
     return;
   }
   res.json({ interview: session });
+});
+
+publicRouter.get("/interview/:token/live", async (req, res) => {
+  const { token } = req.params;
+  const viewer = req.query.viewer === "client" ? "client" : "candidate";
+  const since = Number(req.query.since || "0") || 0;
+
+  const session = await prisma.aiInterviewSession.findUnique({
+    where: { token },
+    include: { pipelineRequest: { select: { clientId: true } } },
+  });
+  if (!session) {
+    res.status(404).json({ error: "Interview room not found." });
+    return;
+  }
+
+  if (viewer === "client") {
+    const [adminSession, clientSession] = await Promise.all([
+      getAdminSessionFromRequest(req),
+      getClientSessionFromRequest(req),
+    ]);
+    if (!adminSession && (!clientSession || clientSession.clientId !== session.pipelineRequest.clientId)) {
+      res.status(401).json({ error: "Client authorization required." });
+      return;
+    }
+    touchClientPresence(token, req.query.coHost === "1");
+  } else {
+    touchEngineerPresence(token);
+  }
+
+  const snapshot = readLiveSnapshot(
+    token,
+    viewer,
+    since,
+    Number(req.query.sinceAudio || "0") || 0
+  );
+  res.json({
+    status: session.status,
+    questions: safeJsonParse<string[]>(session.questionsJson, []),
+    transcript: safeJsonParse<Array<{ question: string; answer: string; timestamp: string }>>(
+      session.transcriptJson,
+      []
+    ),
+    aiSummary: session.aiSummary,
+    overallScore: session.overallScore,
+    recordingUrl: session.recordingUrl,
+    live: snapshot,
+  });
+});
+
+publicRouter.post("/interview/:token/live", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const body = req.body ?? {};
+    const role = body.role === "client" ? "client" : "candidate";
+    const action = String(body.action || "");
+
+    const session = await prisma.aiInterviewSession.findUnique({
+      where: { token },
+      include: { pipelineRequest: { select: { clientId: true } } },
+    });
+    if (!session) {
+      res.status(404).json({ error: "Interview room not found." });
+      return;
+    }
+
+    if (role === "client") {
+      const [adminSession, clientSession] = await Promise.all([
+        getAdminSessionFromRequest(req),
+        getClientSessionFromRequest(req),
+      ]);
+      if (!adminSession && (!clientSession || clientSession.clientId !== session.pipelineRequest.clientId)) {
+        res.status(403).json({ error: "Client authorization required." });
+        return;
+      }
+      touchClientPresence(
+        token,
+        typeof body.coHostActive === "boolean" ? body.coHostActive : undefined,
+        {
+          isScreenSharing:
+            typeof body.isScreenSharing === "boolean" ? body.isScreenSharing : undefined,
+          screenFrameDataUrl:
+            typeof body.screenFrameDataUrl === "string" ? body.screenFrameDataUrl : null,
+          isVideoActive:
+            typeof body.isVideoActive === "boolean" ? body.isVideoActive : undefined,
+          videoFrameDataUrl:
+            typeof body.videoFrameDataUrl === "string" ? body.videoFrameDataUrl : null,
+        }
+      );
+
+      if (action === "SYNC_SCREEN" || action === "SYNC_CLIENT_MEDIA") {
+        res.json({ ok: true });
+        return;
+      }
+
+      if (action === "ASK_LIVE_QUESTION") {
+        const question = String(body.question || "").trim();
+        if (!question || question.length > 500) {
+          res.status(400).json({ error: "Question must be between 1 and 500 characters." });
+          return;
+        }
+        const nextQuestions = [...safeJsonParse<string[]>(session.questionsJson, []), question];
+        await prisma.aiInterviewSession.update({
+          where: { id: session.id },
+          data: { questionsJson: JSON.stringify(nextQuestions) },
+        });
+        res.json({ ok: true, questions: nextQuestions });
+        return;
+      }
+
+      if (action === "WEBRTC_SIGNAL") {
+        const kind = body.kind as LiveSignal["kind"];
+        if (!["offer", "answer", "ice", "renegotiate"].includes(kind)) {
+          res.status(400).json({ error: "Invalid signal kind." });
+          return;
+        }
+        const signal = pushLiveSignal(token, "client", kind, body.payload);
+        res.json({ ok: true, signal });
+        return;
+      }
+
+      if (action === "AUDIO_CHUNK") {
+        pushLiveAudioChunk(token, "client", String(body.audioDataUrl || ""));
+        res.json({ ok: true });
+        return;
+      }
+
+      res.json({ ok: true });
+      return;
+    }
+
+    if (action === "ENGINEER_START") {
+      if (session.status === "SCHEDULED") {
+        await prisma.aiInterviewSession.update({
+          where: { id: session.id },
+          data: { status: "IN_PROGRESS" },
+        });
+      }
+      touchEngineerPresence(token, {
+        activeQuestionIndex: typeof body.activeQuestionIndex === "number" ? body.activeQuestionIndex : 0,
+        liveDraftAnswer: typeof body.liveDraftAnswer === "string" ? body.liveDraftAnswer : "",
+        isVideoActive: typeof body.isVideoActive === "boolean" ? body.isVideoActive : undefined,
+      });
+      res.json({ ok: true });
+      return;
+    }
+
+    if (action === "SYNC_STATE") {
+      touchEngineerPresence(token, {
+        activeQuestionIndex: typeof body.activeQuestionIndex === "number" ? body.activeQuestionIndex : undefined,
+        liveDraftAnswer: typeof body.liveDraftAnswer === "string" ? body.liveDraftAnswer : undefined,
+        liveFrameDataUrl: typeof body.liveFrameDataUrl === "string" ? body.liveFrameDataUrl : null,
+        isScreenSharing: typeof body.isScreenSharing === "boolean" ? body.isScreenSharing : undefined,
+        isVideoActive: typeof body.isVideoActive === "boolean" ? body.isVideoActive : undefined,
+      });
+      if (Array.isArray(body.completedTranscript)) {
+        await prisma.aiInterviewSession.update({
+          where: { id: session.id },
+          data: { transcriptJson: JSON.stringify(body.completedTranscript) },
+        });
+      }
+      res.json({ ok: true });
+      return;
+    }
+
+    if (action === "WEBRTC_SIGNAL") {
+      const kind = body.kind as LiveSignal["kind"];
+      if (!["offer", "answer", "ice", "renegotiate"].includes(kind)) {
+        res.status(400).json({ error: "Invalid signal kind." });
+        return;
+      }
+      const signal = pushLiveSignal(token, "candidate", kind, body.payload);
+      res.json({ ok: true, signal });
+      return;
+    }
+
+    if (action === "AUDIO_CHUNK") {
+      pushLiveAudioChunk(token, "candidate", String(body.audioDataUrl || ""));
+      res.json({ ok: true });
+      return;
+    }
+
+    res.status(400).json({ error: "Unknown action." });
+  } catch (err) {
+    console.error("Live interview signal error:", err);
+    res.status(500).json({ error: "Live interview sync failed." });
+  }
 });
 
 publicRouter.post("/interview/:token", uploadMemory.single("recording"), async (req, res) => {

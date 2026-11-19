@@ -1,6 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAdminSession, getClientSession } from "@/lib/auth";
 import { safeJsonParse } from "@/lib/sanitize";
 import { PublicShell } from "@/components/SiteChrome";
 import { AiInterviewerRoom } from "@/components/AiInterviewerRoom";
@@ -9,10 +10,18 @@ export const dynamic = "force-dynamic";
 
 export default async function InterviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ mode?: string }>;
 }) {
-  const { token } = await params;
+  const [{ token }, { mode }, adminSession, clientSession] = await Promise.all([
+    params,
+    searchParams,
+    getAdminSession(),
+    getClientSession(),
+  ]);
+
   const session = await prisma.aiInterviewSession.findUnique({
     where: { token },
     include: {
@@ -27,21 +36,34 @@ export default async function InterviewPage({
 
   if (!session) notFound();
 
+  const canWatchAsClient = Boolean(
+    adminSession || (clientSession && clientSession.clientId === session.pipelineRequest.clientId)
+  );
+  const viewerRole: "client" | "candidate" =
+    mode === "client" && canWatchAsClient ? "client" : "candidate";
+
   const questions = safeJsonParse<string[]>(session.questionsJson, []);
+  const existingTranscript = safeJsonParse<
+    Array<{ question: string; answer: string; timestamp: string }>
+  >(session.transcriptJson, []);
 
   return (
     <PublicShell>
       <section className="bg-[#0A192F] text-white py-10 border-b border-white/10">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <div className="text-xs font-bold uppercase tracking-widest text-sky-300">
-            In-Browser AI Interviewer Room
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest text-sky-300">
+              {viewerRole === "client"
+                ? "Hiring Client Live Watch & Co-Interview Console"
+                : "In-Browser AI Interviewer Room"}
+            </div>
+            <h1 className="font-heading mt-1 text-2xl sm:text-3xl font-extrabold">
+              {session.pipelineRequest.talent.profileCode} — {session.pipelineRequest.talent.roleTitle}
+            </h1>
+            <p className="mt-1 text-xs text-slate-300">
+              Scheduled Slot: {new Date(session.scheduledSlot).toLocaleString()} ({session.timezone})
+            </p>
           </div>
-          <h1 className="font-heading mt-1 text-2xl sm:text-3xl font-extrabold">
-            {session.pipelineRequest.talent.profileCode} — {session.pipelineRequest.talent.roleTitle}
-          </h1>
-          <p className="mt-1 text-xs text-slate-300">
-            Scheduled Slot: {new Date(session.scheduledSlot).toLocaleString()} ({session.timezone})
-          </p>
         </div>
       </section>
 
@@ -55,6 +77,10 @@ export default async function InterviewPage({
             questions={questions}
             existingStatus={session.status}
             existingSummary={session.aiSummary}
+            existingScore={session.overallScore}
+            existingRecordingUrl={session.recordingUrl}
+            existingTranscript={existingTranscript}
+            viewerRole={viewerRole}
           />
         </div>
       </section>

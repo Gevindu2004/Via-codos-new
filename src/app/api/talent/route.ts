@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       return false;
     }
     if (q) {
-      const hay = `${p.profileCode} ${p.displayName || ""} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
+      const hay = `${p.profileCode} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;

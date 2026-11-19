@@ -15,6 +15,9 @@ import {
   ExternalLink,
   Video,
   Users,
+  MessageSquare,
+  ClipboardList,
+  Send,
 } from "lucide-react";
 
 const PIPELINE_STAGES = [
@@ -115,6 +118,39 @@ export function ClientPortalDashboard() {
   const [editingNoteMap, setEditingNoteMap] = useState<Record<string, string>>({});
 
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [messagesByPipe, setMessagesByPipe] = useState<
+    Record<
+      string,
+      Array<{ id: string; senderRole: string; senderName: string; body: string; createdAt: string }>
+    >
+  >({});
+  const [tasksByPipe, setTasksByPipe] = useState<
+    Record<
+      string,
+      Array<{
+        id: string;
+        title: string;
+        status: string;
+        priority: string;
+        progressNotes: string | null;
+      }>
+    >
+  >({});
+  const [msgDraftMap, setMsgDraftMap] = useState<Record<string, string>>({});
+  const [taskTitleDraftMap, setTaskTitleDraftMap] = useState<Record<string, string>>({});
+
+  const loadCollaboration = async () => {
+    try {
+      const res = await fetch("/api/portal/collaboration", { cache: "no-store" });
+      if (res.ok) {
+        const col = await res.json();
+        setMessagesByPipe(col.messagesByPipe || {});
+        setTasksByPipe(col.tasksByPipe || {});
+      }
+    } catch {
+      // Ignore transient poll errors
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -127,6 +163,7 @@ export function ClientPortalDashboard() {
       const data = await res.json();
       setClient(data.client);
       setRequests(data.requests || []);
+      await loadCollaboration();
     } finally {
       setLoading(false);
     }
@@ -134,7 +171,43 @@ export function ClientPortalDashboard() {
 
   useEffect(() => {
     loadData();
+    const timer = setInterval(() => void loadCollaboration(), 5000);
+    return () => clearInterval(timer);
   }, []);
+
+  const handleSendClientMessage = async (pipeId: string) => {
+    const text = (msgDraftMap[pipeId] || "").trim();
+    if (!text) return;
+    const res = await fetch("/api/portal/collaboration", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pipelineRequestId: pipeId, type: "MESSAGE", body: text }),
+    });
+    if (res.ok) {
+      setMsgDraftMap({ ...msgDraftMap, [pipeId]: "" });
+      await loadCollaboration();
+    }
+  };
+
+  const handleAssignTaskToEngineer = async (pipeId: string) => {
+    const title = (taskTitleDraftMap[pipeId] || "").trim();
+    if (!title) return;
+    const res = await fetch("/api/portal/collaboration", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pipelineRequestId: pipeId,
+        type: "TASK",
+        title,
+        priority: "HIGH",
+      }),
+    });
+    if (res.ok) {
+      setTaskTitleDraftMap({ ...taskTitleDraftMap, [pipeId]: "" });
+      setActionMsg("Task assigned directly to the engineer's portal.");
+      await loadCollaboration();
+    }
+  };
 
   const handleLogout = async () => {
     await fetch("/api/portal/auth/logout", { method: "POST" });
@@ -418,23 +491,40 @@ export function ClientPortalDashboard() {
                           Step 3: AI Interview
                         </div>
                         {latestInterview ? (
-                          <div className="text-xs space-y-2">
-                            <div>
-                              Status: <strong>{latestInterview.status}</strong>
+                          <div className="text-xs space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span>
+                                Status: <strong>{latestInterview.status}</strong>
+                              </span>
+                              {latestInterview.status === "IN_PROGRESS" && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-pulse" />
+                                  LIVE NOW
+                                </span>
+                              )}
                             </div>
                             <div className="text-slate-500">
                               Slot: {new Date(latestInterview.scheduledSlot).toLocaleString()}
                             </div>
-                            <Link
-                              href={`/interview/${latestInterview.token}`}
-                              className="inline-flex items-center gap-1 text-[#1D4ED8] font-semibold hover:underline"
-                            >
-                              Open AI Interview Room <ExternalLink className="h-3 w-3" />
-                            </Link>
+                            <div className="flex flex-col gap-1.5 pt-0.5">
+                              <Link
+                                href={`/interview/${latestInterview.token}?mode=client`}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#1D4ED8] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0A192F] transition"
+                              >
+                                <Video className="h-3.5 w-3.5" />
+                                Watch Live &amp; Interview Engineer
+                              </Link>
+                              <Link
+                                href={`/interview/${latestInterview.token}`}
+                                className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium hover:text-[#1D4ED8] hover:underline"
+                              >
+                                Engineer Invite Room Link <ExternalLink className="h-3 w-3" />
+                              </Link>
+                            </div>
                           </div>
                         ) : (
                           <p className="text-xs text-slate-500">
-                            Pick a slot and customize questions for our in-browser AI interviewer.
+                            Pick a slot, customize questions, watch the engineer live in real time, and ask live follow-up questions.
                           </p>
                         )}
                         <button
@@ -579,6 +669,122 @@ export function ClientPortalDashboard() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Engineer Tasks & Live Client-Engineer Messaging */}
+                  {isApprovedOrLater && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+                      {/* Tasks Assigned to Engineer */}
+                      <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-[#0A192F]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <ClipboardList className="h-4 w-4 text-[#1D4ED8]" />
+                            Engineer Tasks ({(tasksByPipe[pipe.id] || []).length})
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                          {(tasksByPipe[pipe.id] || []).length === 0 ? (
+                            <div className="text-[11px] text-slate-500">
+                              No tasks assigned yet. Add an onboarding or technical task below.
+                            </div>
+                          ) : (
+                            (tasksByPipe[pipe.id] || []).map((t) => (
+                              <div
+                                key={t.id}
+                                className="rounded-lg bg-white border border-slate-200 px-3 py-2 text-xs flex items-start justify-between gap-2"
+                              >
+                                <div>
+                                  <div className="font-semibold text-[#0A0F1A]">{t.title}</div>
+                                  {t.progressNotes && (
+                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                      Note: {t.progressNotes}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-[#0A192F] shrink-0">
+                                  {t.status.replace("_", " ")}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={taskTitleDraftMap[pipe.id] || ""}
+                            onChange={(e) =>
+                              setTaskTitleDraftMap({
+                                ...taskTitleDraftMap,
+                                [pipe.id]: e.target.value,
+                              })
+                            }
+                            placeholder="Assign a new task to engineer..."
+                            className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleAssignTaskToEngineer(pipe.id)}
+                            className="rounded-lg bg-[#0A192F] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1E3A8A]"
+                          >
+                            Assign
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Direct Message Engineer */}
+                      <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-[#0A192F]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <MessageSquare className="h-4 w-4 text-[#1D4ED8]" />
+                            Communicate with {pipe.talent.profileCode}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                          {(messagesByPipe[pipe.id] || []).length === 0 ? (
+                            <div className="text-[11px] text-slate-500">
+                              Start a direct message thread with {pipe.talent.profileCode}.
+                            </div>
+                          ) : (
+                            (messagesByPipe[pipe.id] || []).map((m) => (
+                              <div
+                                key={m.id}
+                                className={`rounded-lg px-3 py-2 text-xs ${
+                                  m.senderRole === "client"
+                                    ? "bg-[#0A192F] text-white ml-6"
+                                    : "bg-white border border-slate-200 text-[#0A0F1A] mr-6"
+                                }`}
+                              >
+                                <div className="text-[10px] opacity-75 mb-0.5">
+                                  {m.senderName}
+                                </div>
+                                <div>{m.body}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={msgDraftMap[pipe.id] || ""}
+                            onChange={(e) =>
+                              setMsgDraftMap({
+                                ...msgDraftMap,
+                                [pipe.id]: e.target.value,
+                              })
+                            }
+                            placeholder={`Message ${pipe.talent.profileCode}...`}
+                            className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSendClientMessage(pipe.id)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#1D4ED8] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0A192F]"
+                          >
+                            <Send className="h-3 w-3" /> Send
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
 

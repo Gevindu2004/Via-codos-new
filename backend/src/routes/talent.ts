@@ -39,7 +39,7 @@ talentRouter.get("/talent", async (req, res) => {
         return false;
       }
       if (q) {
-        const hay = `${p.profileCode} ${p.displayName || ""} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
+        const hay = `${p.profileCode} ${p.roleTitle} ${p.domainName} ${p.summary} ${p.skills.join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

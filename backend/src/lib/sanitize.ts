@@ -46,7 +46,7 @@ export function anonymizeTalentProfile(p: TalentProfile): PublicTalentProfile {
   return {
     id: p.id,
     profileCode: p.profileCode,
-    displayName: p.displayName ?? null,
+    displayName: null,
     category: p.category,
     domainSlug: p.domainSlug,
     domainName: p.domainName,

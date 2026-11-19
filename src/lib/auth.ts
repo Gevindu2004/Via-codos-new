@@ -19,6 +19,7 @@ const SECRET_KEY = getAuthSecretKey();
 
 export const ADMIN_COOKIE = "vc_admin_session";
 export const CLIENT_COOKIE = "vc_client_session";
+export const ENGINEER_COOKIE = "vc_engineer_session";
 
 export interface AdminSessionPayload {
   userId: string;
@@ -35,6 +36,16 @@ export interface ClientSessionPayload {
   companyName: string;
   verificationStatus: string;
   kind: "client";
+}
+
+export interface EngineerSessionPayload {
+  engineerId: string;
+  talentId: string;
+  profileCode: string;
+  email: string;
+  name: string;
+  roleTitle: string;
+  kind: "engineer";
 }
 
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 } as const;
@@ -95,6 +106,16 @@ export async function signClientToken(payload: ClientSessionPayload): Promise<st
     .sign(SECRET_KEY);
 }
 
+export async function signEngineerToken(payload: EngineerSessionPayload): Promise<string> {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuer("via-codos")
+    .setAudience("via-codos-engineer")
+    .setIssuedAt()
+    .setExpirationTime("12h")
+    .sign(SECRET_KEY);
+}
+
 export async function verifyAdminToken(token: string): Promise<AdminSessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY, {
@@ -141,5 +162,25 @@ export async function getClientSession(): Promise<ClientSessionPayload | null> {
   const token = cookieStore.get(CLIENT_COOKIE)?.value;
   if (!token) return null;
   return verifyClientToken(token);
+}
+
+export async function verifyEngineerToken(token: string): Promise<EngineerSessionPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET_KEY, {
+      issuer: "via-codos",
+      audience: "via-codos-engineer",
+    });
+    if (payload.kind !== "engineer") return null;
+    return payload as unknown as EngineerSessionPayload;
+  } catch {
+    return null;
+  }
+}
+
+export async function getEngineerSession(): Promise<EngineerSessionPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ENGINEER_COOKIE)?.value;
+  if (!token) return null;
+  return verifyEngineerToken(token);
 }
 
